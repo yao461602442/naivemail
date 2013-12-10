@@ -36,10 +36,10 @@ public class MailTest {
 		IMailService ms = MailServiceFactory.getMailService();
 		Account _163account = new Account();
 		_163account.setA_account("mitcn@163.com");
-		_163account.setA_passwd("a245412401");
+		_163account.setA_passwd("");
 		Account qqaccount = new Account();
 		qqaccount.setA_account("yao.mitcn@qq.com");
-		qqaccount.setA_passwd("jy13535393974");
+		qqaccount.setA_passwd("");
 		Account hjAccount = new Account();
 		hjAccount.setA_account("1107402232@qq.com");
 		hjAccount.setA_passwd("hjd1");
@@ -69,14 +69,14 @@ public class MailTest {
 		//2.邮件收取测试
 		//邮件中没有附件时效果好。解析邮件的速度快很多。
 		
-		List<Mail> mailList = ms.receiveAllMail
-					(MailServiceAddress.QQPopAddress, hjAccount);
+		List<Mail> mailList = ms.getRecentMail
+					(MailServiceAddress._163PopAddress, _163account);
 		
 		for(int i=0; i<mailList.size(); ++i){
 			System.out.println(mailList.get(i));
 		}
-		MailDao mdao = new MailDao();
-		mdao.insertBatchMail(mailList);
+//		MailDao mdao = new MailDao();
+//		mdao.insertBatchMail(mailList);
 		
 		
 	}

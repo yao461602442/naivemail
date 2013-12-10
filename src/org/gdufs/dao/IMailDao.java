@@ -43,11 +43,11 @@ public interface IMailDao {
 	public int deleteMail(int mailId); //这里的删除跟移动到垃圾箱不同，属于永久删除
 	
 	/**
-	 * 获取指定文件夹的所有邮件列表对象
+	 * 获取指定账户中指定文件夹的所有邮件列表对象
 	 * @param box 文件夹名。 现有的有： 收件箱，垃圾箱，草稿箱，发件箱
 	 * @return 对应文件夹里面所有的邮件列表
 	 */	
-	public List<Mail> queryAll(String box);
+	public List<Mail> queryBoxAll(Account account, int box);
 	
 	/**
 	 * 获取指定邮件对象
@@ -55,5 +55,14 @@ public interface IMailDao {
 	 * @return 邮件对象
 	 */
 	public Mail queryMail(int mailId);
+	
+	/**
+	 * 检查是否为重复邮件
+	 * @param subject 邮件主题
+	 * @param from 发件人
+	 * @param sentTime 发送时间
+	 * @return
+	 */
+	public int checkUnique(String subject, String from, String sentTime);
 	
 }

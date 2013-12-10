@@ -30,6 +30,7 @@ import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeMessage;
 import javax.mail.internet.MimeUtility;
 
+import org.gdufs.dao.impl.MailDao;
 import org.gdufs.entity.Account;
 import org.gdufs.entity.Mail;
 import org.gdufs.entity.MailBox;
@@ -115,8 +116,29 @@ public class MailService implements IMailService {
 	
 	@Override
 	public List<Mail> getRecentMail(String popAddress, Account account){
+		//检查邮件头中的内容.判断是否在数据库中存在这封邮件，有的话就是重复的,否则就收取
+		List<Mail> mailList = new ArrayList<Mail>();
+		MailService ms = (MailService)MailServiceFactory.getMailService();
+		Folder folder = ms.getFolder(popAddress, account);		
+		try {
+			folder.open(Folder.READ_ONLY);
+			ExecutorService exector = Executors.newFixedThreadPool(10);
+			int n = folder.getMessageCount();
+			Message[] message = folder.getMessages();
+			for(int i=0; i<n; ++i){
+				exector.execute(new RecentMailHandler((MimeMessage)message[i], mailList));
+			}
+			exector.shutdown();
+			while(!exector.isTerminated());
+		} catch (MessagingException e) {
+			e.printStackTrace();
+		}		
+		//设置邮件a_id
+		for(int i=0; i<mailList.size(); ++i){
+			mailList.get(i).setA_id(account.getA_id());
+		}
 		
-		return null;
+		return mailList;
 	}
 
 	@Override
@@ -141,6 +163,40 @@ public class MailService implements IMailService {
 			MailService ms = (MailService)MailServiceFactory.getMailService();
 			Mail currentMail = ms.receiveOneMail(this.mimeMessage);		
 			mails[index] = currentMail;
+		}
+	}
+	
+	static class RecentMailHandler extends Thread{
+		private MimeMessage mimeMessage = null;
+		private List<Mail> mailList = null;
+		
+		public RecentMailHandler(MimeMessage mimeMessage, List<Mail> mailList){
+			this.mimeMessage = mimeMessage;		
+			this.mailList = mailList;
+		}
+		
+		@Override
+		public void run(){
+			MailService ms = (MailService)MailServiceFactory.getMailService();
+			String from = null;
+			String time = null;
+			String subject = null;
+			try {
+				 from = ms.getFrom(mimeMessage);
+				 time = ms.getSentDate(mimeMessage);
+				 subject = ms.getSubject(mimeMessage);
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+			
+			//检查
+			MailDao mdao = new MailDao();
+			if(mdao.checkUnique(subject, from, time)==0){
+				Mail currentMail = ms.receiveOneMail(this.mimeMessage);		
+				synchronized (mailList) {
+					mailList.add(currentMail);
+				}
+			}
 		}
 	}
 

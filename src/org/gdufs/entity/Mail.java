@@ -26,20 +26,22 @@ public class Mail {
 	}
 	
 	
-	//额外的操作方法
-	public String getMailBox()
-	{
-		//返回邮件所在文件夹
-		IMailDao mailDao = new MailDao();
-		String mailBoxName = mailDao.getMailBox(this);
-		return mailBoxName;
-	}
+//	//额外的操作方法
+//	public String getMailBoxName()
+//	{
+//		//返回邮件所在文件夹
+//		IMailDao mailDao = new MailDao();
+//		String mailBoxName = mailDao.getMailBox(this);
+//		return mailBoxName;
+//	}
 	
 	
 	//==========getter 和 setter==========================
-	//没有m_id的setter!
 	public int getM_id() {
 		return m_id;
+	}
+	public void setM_id(int m_id){
+		this.m_id=m_id;
 	}
 
 	public void setA_id(int a_id) {
