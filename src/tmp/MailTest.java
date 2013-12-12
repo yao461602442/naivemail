@@ -77,8 +77,6 @@ public class MailTest {
 		}
 //		MailDao mdao = new MailDao();
 //		mdao.insertBatchMail(mailList);
-		
-		
 	}
 	
 }
