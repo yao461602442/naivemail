@@ -4,6 +4,18 @@
  */
 package org.gdufs.view;
 
+import java.awt.Color;
+import javax.swing.JButton;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+import javax.swing.SwingWorker;
+import javax.swing.plaf.IconUIResource;
+import org.gdufs.controller.LoginController;
+import org.gdufs.dao.impl.AccountDao;
+import org.gdufs.entity.Account;
+import org.gdufs.pub.AccountHandler;
+
 /**
  *
  * @author Administrator
@@ -15,6 +27,80 @@ public class login extends javax.swing.JFrame {
      */
     public login() {
         initComponents();
+        jLabel4.setIcon(null);
+        jLabel4.setText(null);
+        jLabel7.setVisible(false);
+        setLocationRelativeTo(null);
+    }
+
+    static class LoginWorker extends SwingWorker<String, Object> {
+
+        Account account = null;
+        JLabel label = null;
+        JButton button = null;
+        JFrame frame = null;
+
+        public LoginWorker(Account account, JLabel label, JButton button, JFrame frame) {
+            this.account = account;
+            this.label = label;
+            this.button = button;
+            this.frame = frame;
+        }
+
+        /**
+         * 处理登录成功后要做的事情
+         */
+        private void loginSuccessProcess(Account account) {
+            //过程：将账号插入数据库并从数据库中取出id，再设置为最新登录账号
+            //获取新邮件，启动主界面
+            //1.插入账号
+            //插入之前查询要做查询！
+            AccountDao adao = new AccountDao();
+            if (adao.checkAccount(account.getA_account(), account.getA_passwd()) != 1) {
+                //数据库中没有此账号。插入
+                adao.insertAccount(account);
+            }
+            //2.获取数据库中的账号
+            Account ret = adao.queryAccount(account.getA_account(), account.getA_passwd());
+            //3.设置
+            AccountHandler.setLoginAccount(ret);
+            //4.启动新邮件获取界面
+            java.awt.EventQueue.invokeLater(new Runnable() {
+                public void run() {
+                    new ReceiveMail().setVisible(true);
+                }
+            });
+        }
+
+        @Override
+        protected String doInBackground() throws Exception {
+            String ret = LoginController.login(this.account.getA_account(), this.account.getA_passwd());
+            return ret;
+        }
+
+        @Override
+        protected void done() {
+            try {
+                String result = get();
+                if (result.equals("验证成功！")) {
+                    label.setIcon(new javax.swing.ImageIcon(getClass().getResource("/image/accCreateSuccess.png")));
+                    label.setText("登录成功");
+                    //登录成功后处理一些事务
+                    loginSuccessProcess(account);
+                    //设置登录界面不可见                  
+                    frame.setVisible(false);
+                    frame.dispose();//关闭资源
+                } else {
+                    label.setIcon(new javax.swing.ImageIcon(getClass().getResource("/image/import_warn.png")));
+                    label.setText(result);
+                    label.setForeground(new java.awt.Color(255, 0, 51));//设置为红色
+                }
+                button.setEnabled(true);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+
+        }
     }
 
     /**
@@ -38,6 +124,7 @@ public class login extends javax.swing.JFrame {
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         setTitle("新建帐号-NaiveMail");
+        setResizable(false);
 
         jLabel1.setFont(new java.awt.Font("微软雅黑", 0, 14)); // NOI18N
         jLabel1.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
@@ -52,10 +139,20 @@ public class login extends javax.swing.JFrame {
         jLabel2.setCursor(new java.awt.Cursor(java.awt.Cursor.DEFAULT_CURSOR));
 
         jButton1.setFont(new java.awt.Font("微软雅黑", 0, 12)); // NOI18N
-        jButton1.setText("取消");
+        jButton1.setText("退出");
+        jButton1.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButton1ActionPerformed(evt);
+            }
+        });
 
         jButton2.setFont(new java.awt.Font("微软雅黑", 0, 12)); // NOI18N
         jButton2.setText("登录");
+        jButton2.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButton2ActionPerformed(evt);
+            }
+        });
 
         jLabel4.setFont(new java.awt.Font("微软雅黑", 0, 12)); // NOI18N
         jLabel4.setForeground(new java.awt.Color(51, 204, 0));
@@ -83,7 +180,7 @@ public class login extends javax.swing.JFrame {
                                 .addComponent(jButton2)
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                                 .addComponent(jButton1)))
-                        .addContainerGap())
+                        .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                     .addGroup(layout.createSequentialGroup()
                         .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addComponent(jLabel1, javax.swing.GroupLayout.PREFERRED_SIZE, 140, javax.swing.GroupLayout.PREFERRED_SIZE)
@@ -121,10 +218,36 @@ public class login extends javax.swing.JFrame {
         pack();
     }// </editor-fold>//GEN-END:initComponents
 
+    private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton2ActionPerformed
+        // 登录认证操作
+        String account = jTextField1.getText();
+        String passwd = new String(jPasswordField1.getPassword());
+        if (account.length() < 5 || passwd.length() < 5) {
+            return;
+        }
+        Account a = new Account();
+        a.setA_account(account);
+        a.setA_passwd(passwd);
+        new LoginWorker(a, jLabel4, jButton2, this).execute();
+        jLabel4.setText("认证中....");
+        jLabel4.setForeground(Color.BLUE);
+        jButton2.setEnabled(false);
+    }//GEN-LAST:event_jButton2ActionPerformed
+
+    private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
+        // 退出操作
+        int type = JOptionPane.showConfirmDialog(this, "确认退出吗？", "退出", JOptionPane.YES_NO_OPTION);
+        if (type == JOptionPane.YES_OPTION) {
+            System.exit(0);
+        }
+    }//GEN-LAST:event_jButton1ActionPerformed
+
     /**
      * @param args the command line arguments
      */
     public static void main(String args[]) {
+        //首先检查数据库中是否有默认账号！若没有则需要登录
+
         /*
          * Set the Nimbus look and feel
          */
@@ -156,7 +279,6 @@ public class login extends javax.swing.JFrame {
          * Create and display the form
          */
         java.awt.EventQueue.invokeLater(new Runnable() {
-
             public void run() {
                 new login().setVisible(true);
             }

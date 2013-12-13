@@ -56,9 +56,11 @@ public class MailService implements IMailService {
 			socketReader = getReader(socket);
 			socketWriter = getWriter(socket);
 			message = socketReader.readLine();
+                        System.out.println(message);
 			// 验证用户名
 			socketWriter.println("USER " + account.getA_account());
 			message = socketReader.readLine();
+                        System.out.println(message);
 			if (!message.startsWith("+OK")) {
 				message = "登录失败，用户不存在";
 				return message;
@@ -66,6 +68,7 @@ public class MailService implements IMailService {
 			// 验证密码
 			socketWriter.println("PASS " + account.getA_passwd());
 			message = socketReader.readLine();
+                        System.out.println(message);
 			if (!message.startsWith("+OK")) {
 				message = "密码错误！或者POP服务未开通！";
 				return message;

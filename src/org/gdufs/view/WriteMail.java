@@ -26,17 +26,87 @@ public class WriteMail extends javax.swing.JFrame {
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
+        jLabelReceiver = new javax.swing.JLabel();
+        jLabelTopic = new javax.swing.JLabel();
+        jTextFieldReceiver = new javax.swing.JTextField();
+        jTextFieldTopic = new javax.swing.JTextField();
+        jSeparator1 = new javax.swing.JSeparator();
+        jButtonSend = new javax.swing.JButton();
+        jButtonSave = new javax.swing.JButton();
+        jButtonClose = new javax.swing.JButton();
+        jScrollPane1 = new javax.swing.JScrollPane();
+        jTextPaneContent = new javax.swing.JTextPane();
+
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
+        setTitle("Î´ÃüÃû-Ð´ÓÊ¼þ- 14:01:54 ÒÑ±£´æ");
+
+        jLabelReceiver.setFont(new java.awt.Font("Î¢ÈíÑÅºÚ", 0, 12)); // NOI18N
+        jLabelReceiver.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
+        jLabelReceiver.setText("ÊÕ¼þÈË£º");
+
+        jLabelTopic.setFont(new java.awt.Font("Î¢ÈíÑÅºÚ", 0, 12)); // NOI18N
+        jLabelTopic.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
+        jLabelTopic.setText("Ö÷Ìâ£º");
+
+        jButtonSend.setFont(new java.awt.Font("Î¢ÈíÑÅºÚ", 0, 12)); // NOI18N
+        jButtonSend.setText("·¢ËÍ");
+
+        jButtonSave.setFont(new java.awt.Font("Î¢ÈíÑÅºÚ", 0, 12)); // NOI18N
+        jButtonSave.setText("´æ²Ý¸å");
+
+        jButtonClose.setFont(new java.awt.Font("Î¢ÈíÑÅºÚ", 0, 12)); // NOI18N
+        jButtonClose.setText("¹Ø±Õ");
+
+        jScrollPane1.setViewportView(jTextPaneContent);
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 400, Short.MAX_VALUE)
+            .addComponent(jSeparator1)
+            .addGroup(layout.createSequentialGroup()
+                .addContainerGap()
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(jLabelReceiver)
+                    .addComponent(jLabelTopic))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(jTextFieldTopic)
+                    .addComponent(jTextFieldReceiver)))
+            .addGroup(layout.createSequentialGroup()
+                .addGap(30, 30, 30)
+                .addComponent(jButtonSend)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(jButtonSave)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(jButtonClose)
+                .addContainerGap(401, Short.MAX_VALUE))
+            .addComponent(jScrollPane1, javax.swing.GroupLayout.Alignment.TRAILING)
         );
+
+        layout.linkSize(javax.swing.SwingConstants.HORIZONTAL, new java.awt.Component[] {jLabelReceiver, jLabelTopic});
+
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 300, Short.MAX_VALUE)
+            .addGroup(layout.createSequentialGroup()
+                .addGap(17, 17, 17)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jLabelReceiver)
+                    .addComponent(jTextFieldReceiver, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jLabelTopic)
+                    .addComponent(jTextFieldTopic, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(jSeparator1, javax.swing.GroupLayout.PREFERRED_SIZE, 10, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 510, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jButtonSend)
+                    .addComponent(jButtonSave)
+                    .addComponent(jButtonClose))
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
 
         pack();
@@ -84,5 +154,15 @@ public class WriteMail extends javax.swing.JFrame {
         });
     }
     // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JButton jButtonClose;
+    private javax.swing.JButton jButtonSave;
+    private javax.swing.JButton jButtonSend;
+    private javax.swing.JLabel jLabelReceiver;
+    private javax.swing.JLabel jLabelTopic;
+    private javax.swing.JScrollPane jScrollPane1;
+    private javax.swing.JSeparator jSeparator1;
+    private javax.swing.JTextField jTextFieldReceiver;
+    private javax.swing.JTextField jTextFieldTopic;
+    private javax.swing.JTextPane jTextPaneContent;
     // End of variables declaration//GEN-END:variables
 }

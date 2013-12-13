@@ -37,6 +37,13 @@ public interface IAccountDao  {
 	 * @return 邮箱对象，若查找不到则返回Null
 	 */
 	public Account queryAccount(String account, String pwd);
+        
+        /**
+         * 获取指定邮箱账号
+         * @param id 账号id
+         * @return 邮箱对象，若找不到则返回null
+         */
+        public Account queryAccount(int id);
 	
 	/**
 	 * 检验邮箱账号是否存在。 仅仅检查存在性！
@@ -45,5 +52,13 @@ public interface IAccountDao  {
 	 * @return 返回查询结果，1表示查询成功，0表示查询失败
 	 */
 	public int checkAccount(String account, String pwd);
+        
+        /**
+         * 查询是否存在默认账号
+         * @return 若存在则返回账号id，不存在返回0
+         */
+        public int defaultAccount();
+            
+        
 
 }

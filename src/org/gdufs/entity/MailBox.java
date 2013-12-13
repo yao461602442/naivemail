@@ -7,9 +7,10 @@ package org.gdufs.entity;
 public class MailBox {
 	
 	public static final int INBOX = 1;
-	public static final int DeleteMessage = 2;
+	public static final int SPAMBOX = 2;
 	public static final int DRAFTS = 3;
-	public static final int SentMessage = 4;
+	public static final int SENTBOX = 4;
+        public static final int DELETEDBOX = 5;
 	
 
 	private int    b_id;

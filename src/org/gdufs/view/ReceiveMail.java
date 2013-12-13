@@ -4,6 +4,20 @@
  */
 package org.gdufs.view;
 
+import java.util.List;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JProgressBar;
+import javax.swing.SwingWorker;
+import org.gdufs.dao.IMailDao;
+import org.gdufs.dao.impl.MailDao;
+import org.gdufs.entity.Account;
+import org.gdufs.entity.Mail;
+import org.gdufs.entity.MailServiceAddress;
+import org.gdufs.pub.AccountHandler;
+import org.gdufs.pub.MailServiceFactory;
+import org.gdufs.service.IMailService;
+
 /**
  *
  * @author Administrator
@@ -15,8 +29,60 @@ public class ReceiveMail extends javax.swing.JFrame {
      */
     public ReceiveMail() {
         initComponents();
+        setLocationRelativeTo(null);
+        jProgressBar1.setValue(0);
+        jProgressBar1.setMaximum(100);
+        //执行新邮件获取,垃圾邮件识别
+        new ReceiveMailWorker(this, jProgressBar1, jLabelProcessMessage).execute();
     }
-
+    
+    /**
+     * 邮件获取线程
+     */
+    static class ReceiveMailWorker extends SwingWorker<String, Object>{
+        
+        private JProgressBar jpb = null;
+        private JLabel label = null;
+        private JFrame frame = null;
+        public ReceiveMailWorker(JFrame frame, JProgressBar jpb, JLabel label){
+            this.jpb = jpb;
+            this.label = label;
+            this.frame = frame;
+        }
+        @Override
+        protected String doInBackground() throws Exception {
+            //1.获取邮件
+            Account user = AccountHandler.getLoginAccount();
+            IMailService mailService = MailServiceFactory.getMailService();
+            String server = MailServiceAddress.getPopAddress(user.getA_account());
+            List<Mail> mailList = mailService.getRecentMail(server, user);            
+            jpb.setValue(50);
+            //2.垃圾邮件过滤
+            label.setText("收取邮件完成，正在识别垃圾邮件..");
+            jpb.setValue(80);
+            //3.插入新邮件到数据库中
+            label.setText("识别完成，正在保存操作结果..");
+            IMailDao mdao = new MailDao();
+            mdao.insertBatchMail(mailList);
+            jpb.setValue(100);
+            label.setText("操作完成！");
+            return null;
+        }
+        
+        @Override
+        protected void done(){
+            //完成邮件获取后,启动主界面，关闭当前界面
+            java.awt.EventQueue.invokeLater(new Runnable() {
+                public void run() {
+                    new MAIL().setVisible(true);
+                }
+            });
+            this.frame.setVisible(false);
+            this.frame.dispose();//关闭资源
+        }
+        
+    }
+    
     /**
      * This method is called from within the constructor to initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is always
@@ -27,7 +93,7 @@ public class ReceiveMail extends javax.swing.JFrame {
     private void initComponents() {
 
         jLabel1 = new javax.swing.JLabel();
-        jLabel2 = new javax.swing.JLabel();
+        jLabelProcessMessage = new javax.swing.JLabel();
         jProgressBar1 = new javax.swing.JProgressBar();
         jSeparator1 = new javax.swing.JSeparator();
         jLabel3 = new javax.swing.JLabel();
@@ -39,8 +105,8 @@ public class ReceiveMail extends javax.swing.JFrame {
 
         jLabel1.setIcon(new javax.swing.ImageIcon(getClass().getResource("/image/ftn_drag_over1.png"))); // NOI18N
 
-        jLabel2.setFont(new java.awt.Font("微软雅黑", 0, 14)); // NOI18N
-        jLabel2.setText("正在收取邮件，请稍候...");
+        jLabelProcessMessage.setFont(new java.awt.Font("微软雅黑", 0, 14)); // NOI18N
+        jLabelProcessMessage.setText("正在收取邮件，请稍候...");
 
         jLabel3.setFont(new java.awt.Font("微软雅黑", 0, 12)); // NOI18N
         jLabel3.setForeground(new java.awt.Color(51, 204, 0));
@@ -78,7 +144,7 @@ public class ReceiveMail extends javax.swing.JFrame {
                 .addGap(18, 18, 18)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(layout.createSequentialGroup()
-                        .addComponent(jLabel2)
+                        .addComponent(jLabelProcessMessage)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 39, javax.swing.GroupLayout.PREFERRED_SIZE))
                     .addComponent(jProgressBar1, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, 188, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addContainerGap(47, Short.MAX_VALUE))
@@ -96,7 +162,7 @@ public class ReceiveMail extends javax.swing.JFrame {
                         .addComponent(jLabel1))
                     .addGroup(layout.createSequentialGroup()
                         .addGap(71, 71, 71)
-                        .addComponent(jLabel2)
+                        .addComponent(jLabelProcessMessage)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                         .addComponent(jProgressBar1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
@@ -160,9 +226,9 @@ public class ReceiveMail extends javax.swing.JFrame {
     private javax.swing.JButton jButton1;
     private javax.swing.JButton jButton2;
     private javax.swing.JLabel jLabel1;
-    private javax.swing.JLabel jLabel2;
     private javax.swing.JLabel jLabel3;
     private javax.swing.JLabel jLabel4;
+    private javax.swing.JLabel jLabelProcessMessage;
     private javax.swing.JProgressBar jProgressBar1;
     private javax.swing.JSeparator jSeparator1;
     // End of variables declaration//GEN-END:variables

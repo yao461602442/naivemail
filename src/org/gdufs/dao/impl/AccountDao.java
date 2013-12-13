@@ -127,16 +127,51 @@ public class AccountDao implements IAccountDao {
 		return 0;
 	}
 	
-	
-	
-	public static void main(String[] args) {
-		//≤‚ ‘
-		AccountDao adao = new AccountDao();	
-		Account a = adao.queryAccount("ZhangSan", "321321");
-		System.out.println(a);
-		//a.setA_passwd("123123"); 
-		System.out.println(adao.updateAccount(a));
-		System.out.println(adao.deleteAccount(a));
-	}
+
+    @Override
+    public int defaultAccount() {
+        Connection conn = DBUtil.getConnection();
+        PreparedStatement pstat = null;
+        ResultSet rs = null;
+        int ret = 0;
+        try{
+            String sql = "select a_id from login";
+            pstat = conn.prepareStatement(sql);
+            rs = pstat.executeQuery();
+            if(rs.next()){
+                ret = rs.getInt("a_id");
+            }            
+        } catch(Exception e){
+            e.printStackTrace();
+        } finally{
+            DBUtil.close(pstat);
+            DBUtil.close(conn);
+        }
+        return ret;
+    }
+
+    @Override
+    public Account queryAccount(int id) {
+        Connection conn = DBUtil.getConnection();
+        PreparedStatement pstat = null;
+        ResultSet rs = null;
+        Account account = null;
+        try{
+            String sql = "select a_account, a_passwd from account where a_id=?";            
+            pstat = conn.prepareStatement(sql);
+            rs = pstat.executeQuery();
+            if(rs.next()){
+                account.setA_account(rs.getString("a_account"));
+                account.setA_id(id);
+                account.setA_passwd("a_passwd");                
+            }
+        } catch(Exception e){
+            e.printStackTrace();
+        } finally{
+            DBUtil.close(pstat);
+            DBUtil.close(conn);
+        }
+        return account;
+    }
 
 }

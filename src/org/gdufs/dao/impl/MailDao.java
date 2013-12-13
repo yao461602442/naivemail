@@ -171,6 +171,9 @@ public class MailDao implements IMailDao {
 	@Override
 	public int insertBatchMail(List<Mail> list) {
 		int ret = 0;
+                if(list == null || list.size()==0){
+                    return ret;
+                }
 		Connection conn = DBUtil.getConnection();
 		PreparedStatement prep = null;
 		String sql = "insert into mail (a_id, b_id, m_title, m_time, m_sender, " +
