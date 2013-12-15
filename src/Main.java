@@ -1,6 +1,8 @@
 
+import org.gdufs.controller.FrameFactory;
 import org.gdufs.dao.IAccountDao;
 import org.gdufs.dao.impl.AccountDao;
+import org.gdufs.pub.AccountHandler;
 import org.gdufs.view.MAIL;
 import org.gdufs.view.login;
 
@@ -14,10 +16,11 @@ import org.gdufs.view.login;
  * @author Administrator
  */
 public class Main {
+    
     public static void main(String[] args){
         //查询是否存在默认账号，若有则直接进入主程序，否则启动登录界面
         IAccountDao adao = new AccountDao();
-        if(adao.defaultAccount() > 0){
+        if(AccountHandler.getLoginAccount() != null){
             //存在默认账号，直接进入邮箱主界面
             startMAIL();
         } else {
@@ -29,7 +32,7 @@ public class Main {
     private static void startMAIL(){
          java.awt.EventQueue.invokeLater(new Runnable() {
             public void run() {
-                new MAIL().setVisible(true);
+                FrameFactory.getMainFrame().setFrame().setVisible(true);
             }
         });
     }
@@ -37,7 +40,7 @@ public class Main {
     private static void startLogin(){
          java.awt.EventQueue.invokeLater(new Runnable() {
             public void run() {
-                new login().setVisible(true);
+                FrameFactory.getLoginFrame().setVisible(true);
             }
         });
     }

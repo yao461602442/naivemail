@@ -9,6 +9,7 @@ import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JProgressBar;
 import javax.swing.SwingWorker;
+import org.gdufs.controller.FrameFactory;
 import org.gdufs.dao.IMailDao;
 import org.gdufs.dao.impl.MailDao;
 import org.gdufs.entity.Account;
@@ -74,7 +75,7 @@ public class ReceiveMail extends javax.swing.JFrame {
             //完成邮件获取后,启动主界面，关闭当前界面
             java.awt.EventQueue.invokeLater(new Runnable() {
                 public void run() {
-                    new MAIL().setVisible(true);
+                    FrameFactory.getMainFrame().setVisible(true);
                 }
             });
             this.frame.setVisible(false);

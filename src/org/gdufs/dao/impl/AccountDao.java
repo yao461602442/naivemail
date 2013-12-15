@@ -4,6 +4,8 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.gdufs.dao.IAccountDao;
 import org.gdufs.entity.Account;
@@ -11,122 +13,135 @@ import org.gdufs.pub.DBUtil;
 
 public class AccountDao implements IAccountDao {
 
-	@Override
-	public int insertAccount(Account account) {
-		if(account==null)
-			return 0;
-		if(queryAccount(account.getA_account(), account.getA_passwd())!=null){
-			return 0;
-		}
-		Connection conn = null;		
-		PreparedStatement pstat = null;
-		int ret = 0;
-		Account a = null;
-		String sql = "insert into account (a_account, a_passwd) values(?,?)";
-		try {
-			conn = DBUtil.getConnection();
-			pstat = conn.prepareStatement(sql);
-			pstat.setString(1,account.getA_account());
-			pstat.setString(2, account.getA_passwd());
-			ret = pstat.executeUpdate();
-			pstat.close();
-			conn.close();
-		} catch (SQLException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();			
-		}
-		return ret;
-	}
+    @Override
+    public int insertAccount(Account account) {
+        if (account == null) {
+            return 0;
+        }
+        if (queryAccount(account.getA_account(), account.getA_passwd()) != null) {
+            return 0;
+        }
+        Connection conn = null;
+        PreparedStatement pstat = null;
+        int ret = 0;
+        Account a = null;
+        String sql = "insert into account (a_account, a_passwd) values(?,?)";
+        try {
+            conn = DBUtil.getConnection();
+            pstat = conn.prepareStatement(sql);
+            pstat.setString(1, account.getA_account());
+            pstat.setString(2, account.getA_passwd());
+            ret = pstat.executeUpdate();
+        } catch (SQLException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        } finally {
+            DBUtil.close(pstat);
+            DBUtil.close(conn);
+        }
+        return ret;
+    }
 
-	@Override
-	public int updateAccount(Account account) {
-		if(account==null)
-			return 0;
-		Connection conn = null;		
-		PreparedStatement pstat = null;
-		int ret = 0;
-		Account a = null;
-		String sql = "update account set a_passwd=? where a_id=?";
-		try {
-			conn = DBUtil.getConnection();
-			pstat = conn.prepareStatement(sql);
-			pstat.setString(1, account.getA_passwd());
-			pstat.setInt(2, account.getA_id());
-			ret = pstat.executeUpdate();
-			
-			pstat.close();
-			conn.close();
-		} catch (SQLException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		return ret;
-	}
+    @Override
+    public int updateAccount(Account account) {
+        if (account == null) {
+            return 0;
+        }
+        Connection conn = null;
+        PreparedStatement pstat = null;
+        int ret = 0;
+        String sql = "update account set a_passwd=? , autoreceive=? , checktime=? where a_id=?";
+        //update account set a_passwd="a245412401" , autoreceive=1, checktime=13 where a_id=2
+        try {
+            conn = DBUtil.getConnection();
+            pstat = conn.prepareStatement(sql);
+            pstat.setString(1, account.getA_passwd());
+            pstat.setInt(2, account.getAutoReceive());
+            pstat.setInt(3, account.getCheckTime());
+            pstat.setInt(4, account.getA_id());            
+            System.out.println(account);
+            ret = pstat.executeUpdate();
+        } catch (SQLException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }finally {
+            DBUtil.close(pstat);
+            DBUtil.close(conn);
+        }
+        return ret;
+    }
 
-	@Override
-	public int deleteAccount(Account account) {
-		if(account==null)
-			return 0;
-		Connection conn = null;		
-		PreparedStatement pstat = null;
-		int ret = 0;
-		Account a = null;
-		String sql = "delete from account where a_id=?";
-		try {
-			conn = DBUtil.getConnection();
-			pstat = conn.prepareStatement(sql);
-			pstat.setInt(1, account.getA_id());			
-			ret = pstat.executeUpdate();
-			pstat.close();
-			conn.close();
-		} catch (SQLException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		return ret;
-	}
+    @Override
+    public int deleteAccount(Account account) {
+        if (account == null) {
+            return 0;
+        }
+        Connection conn = null;
+        PreparedStatement pstat = null;
+        int ret = 0;
+        Account a = null;
+        String sql = "delete from account where a_id=?";
+        try {
+            conn = DBUtil.getConnection();
+            pstat = conn.prepareStatement(sql);
+            pstat.setInt(1, account.getA_id());
+            ret = pstat.executeUpdate();
+        } catch (SQLException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        } finally {
+            DBUtil.close(pstat);
+            DBUtil.close(conn);
+        }
+        return ret;
+    }
 
-	@Override
-	public Account queryAccount(String account, String pwd) {
-		if(account==null || pwd==null)
-			return null;
-		Connection conn = null;		
-		PreparedStatement pstat = null;
-		ResultSet rs = null;
-		Account a = null;
-		String sql = "select * from account where a_account=? and a_passwd = ?";
-		try {
-			conn = DBUtil.getConnection();
-			pstat = conn.prepareStatement(sql);
-			pstat.setString(1,account);
-			pstat.setString(2, pwd);
-			rs = pstat.executeQuery();
-			//获取账户
-			if(rs.next()){
-				a = new Account();
-				a.setA_id(rs.getInt(1));
-				a.setA_account(rs.getString(2));
-				a.setA_passwd(rs.getString(3));
-			}
-			pstat.close();
-			conn.close();
-			
-		} catch (SQLException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		return a;
-	}
+    @Override
+    public Account queryAccount(String account, String pwd) {
+        if (account == null || pwd == null) {
+            return null;
+        }
+        Connection conn = null;
+        PreparedStatement pstat = null;
+        ResultSet rs = null;
+        Account a = null;
+        String sql = "select a_id, a_account, a_passwd, autoreceive, checktime from account where a_account=? and a_passwd = ?";
+        try {
+            conn = DBUtil.getConnection();
+            pstat = conn.prepareStatement(sql);
+            pstat.setString(1, account);
+            pstat.setString(2, pwd);
+            rs = pstat.executeQuery();
+            //获取账户
+            if (rs.next()) {
+                a = new Account();
+                a.setA_id(rs.getInt("a_id"));
+                a.setA_account(rs.getString("a_account"));
+                a.setA_passwd(rs.getString("a_passwd"));
+                a.setAutoReceive(rs.getInt("autoreceive"));
+                a.setCheckTime(rs.getInt("checktime"));
+            }
+            
 
-	@Override
-	public int checkAccount(String account, String pwd) {
-		Account a = this.queryAccount(account, pwd);
-		if(a!=null){
-			return 1;
-		}
-		return 0;
-	}
-	
+        } catch (SQLException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        } finally {
+            DBUtil.close(pstat);
+            DBUtil.close(conn);
+        }
+        
+        return a;
+    }
+
+    @Override
+    public int checkAccount(String account, String pwd) {
+        Account a = this.queryAccount(account, pwd);
+        if (a != null) {
+            return 1;
+        }
+        return 0;
+    }
 
     @Override
     public int defaultAccount() {
@@ -134,16 +149,16 @@ public class AccountDao implements IAccountDao {
         PreparedStatement pstat = null;
         ResultSet rs = null;
         int ret = 0;
-        try{
+        try {
             String sql = "select a_id from login";
             pstat = conn.prepareStatement(sql);
             rs = pstat.executeQuery();
-            if(rs.next()){
+            if (rs.next()) {
                 ret = rs.getInt("a_id");
-            }            
-        } catch(Exception e){
+            }
+        } catch (Exception e) {
             e.printStackTrace();
-        } finally{
+        } finally {
             DBUtil.close(pstat);
             DBUtil.close(conn);
         }
@@ -156,22 +171,54 @@ public class AccountDao implements IAccountDao {
         PreparedStatement pstat = null;
         ResultSet rs = null;
         Account account = null;
-        try{
-            String sql = "select a_account, a_passwd from account where a_id=?";            
+        try {
+            String sql = "select a_account, a_passwd, autoreceive, checktime from account where a_id=?";
             pstat = conn.prepareStatement(sql);
+            pstat.setInt(1, id);
             rs = pstat.executeQuery();
-            if(rs.next()){
+            if (rs.next()) {
+                account = new Account();
                 account.setA_account(rs.getString("a_account"));
                 account.setA_id(id);
-                account.setA_passwd("a_passwd");                
+                account.setA_passwd(rs.getString("a_passwd"));
+                account.setAutoReceive(rs.getInt("autoreceive"));
+                account.setCheckTime(rs.getInt("checktime"));
             }
-        } catch(Exception e){
+        } catch (Exception e) {
             e.printStackTrace();
-        } finally{
+        } finally {
             DBUtil.close(pstat);
             DBUtil.close(conn);
         }
         return account;
     }
-
+    
+    @Override
+    public List<Account> getAllAccount(){
+        Connection conn = DBUtil.getConnection();
+        PreparedStatement pstat = null;
+        ResultSet rs = null;
+        List<Account> ret = new ArrayList<Account>();
+        Account account = null;
+        try {
+            String sql = "select a_id, a_account, a_passwd, autoreceive, checktime from account";
+            pstat = conn.prepareStatement(sql);
+            rs = pstat.executeQuery();
+            while (rs.next()) {
+                account = new Account();
+                account.setA_account(rs.getString("a_account"));
+                account.setA_id(rs.getInt("a_id"));
+                account.setA_passwd(rs.getString("a_passwd"));
+                account.setAutoReceive(rs.getInt("autoreceive"));
+                account.setCheckTime(rs.getInt("checktime"));
+                ret.add(account);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            DBUtil.close(pstat);
+            DBUtil.close(conn);
+        }
+        return ret;
+    }
 }

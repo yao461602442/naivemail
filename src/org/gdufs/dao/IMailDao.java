@@ -12,7 +12,7 @@ public interface IMailDao {
 	 * @param mail
 	 * @return 返回邮件对象所属文件夹名
 	 */
-	public String getMailBox(Mail mail);
+	public int getMailBoxName(Mail mail);
 	
 	/**
 	 * 更新邮件
@@ -64,5 +64,13 @@ public interface IMailDao {
 	 * @return
 	 */
 	public int checkUnique(String subject, String from, String sentTime);
+        
+        /**
+         * 根据关键字搜索邮件
+         * @param account
+         * @param key
+         * @return 
+         */
+        public List<Mail> searchMail(Account account, String key);
 	
 }

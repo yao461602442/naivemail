@@ -6,11 +6,11 @@ package org.gdufs.entity;
  */
 public class MailBox {
 	
-	public static final int INBOX = 1;
-	public static final int SPAMBOX = 2;
-	public static final int DRAFTS = 3;
-	public static final int SENTBOX = 4;
-        public static final int DELETEDBOX = 5;
+	public static final int INBOX = 1; //收件箱
+	public static final int SPAMBOX = 2; //垃圾箱
+	public static final int DRAFTS = 3; //草稿箱
+	public static final int SENTBOX = 4; //已发送
+        public static final int DELETEDBOX = 5; //已删除
 	
 
 	private int    b_id;

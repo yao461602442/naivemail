@@ -34,7 +34,7 @@ public interface IMailService {
 	 * 发送邮件
 	 * @param mail 邮件对象
 	 */
-	public void sendMail(String smtpAddress, Account account, Mail mail);
+	public void sendMail(Account account, Mail mail);
 	
 	
 }

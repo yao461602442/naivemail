@@ -4,17 +4,93 @@
  */
 package org.gdufs.view;
 
+import java.util.ArrayList;
+import java.util.List;
+import javax.swing.DefaultListModel;
+import javax.swing.JFrame;
+import javax.swing.JOptionPane;
+import javax.swing.ListModel;
+import javax.swing.WindowConstants;
+import javax.swing.text.AttributeSet;
+import javax.swing.text.BadLocationException;
+import javax.swing.text.PlainDocument;
+import org.gdufs.controller.FrameFactory;
+import org.gdufs.dao.IAccountDao;
+import org.gdufs.dao.impl.AccountDao;
+import org.gdufs.entity.Account;
+import org.gdufs.pub.AccountHandler;
+
 /**
  *
  * @author Administrator
  */
 public class UserInfo extends javax.swing.JFrame {
 
+    private List<Account> accountList = new ArrayList<Account>();
+
     /**
      * Creates new form UserInfo
      */
     public UserInfo() {
         initComponents();
+        this.setLocationRelativeTo(null);
+        this.setDefaultCloseOperation(JFrame.HIDE_ON_CLOSE);
+        //设置界面
+        //setFrame();
+        
+    }
+    
+    public void setFrame(){
+        //设置左界面
+        Account user = AccountHandler.getLoginAccount();
+        jTextFieldEmail.setText(user.getA_account());
+        jPasswordFieldPwd.setText(user.getA_passwd());
+        //设置时间间隔窗口只能输入5位以内数字
+        this.jTextFieldReceiveSequence.setDocument(new NumberLenghtLimitedDmt(5));
+        if (user.getAutoReceive() == 0) {
+            jCheckBoxAutoReceive.setSelected(false);
+            jTextFieldReceiveSequence.setEnabled(false);
+        } else {
+            jCheckBoxAutoReceive.setSelected(true);
+            jTextFieldReceiveSequence.setText(user.getCheckTime() + "");
+        }
+        //设置右界面
+        IAccountDao adao = new AccountDao();
+        accountList = adao.getAllAccount();
+        DefaultListModel model = new DefaultListModel();
+        for (int i = 0; i < accountList.size(); ++i) {
+            model.addElement(accountList.get(i).getA_account());
+        }
+        jListAccount.setModel(model);
+    }
+
+    class NumberLenghtLimitedDmt extends PlainDocument {
+
+        public NumberLenghtLimitedDmt(int limit) {
+            super();
+            this.limit = limit;
+        }
+
+        @Override
+        public void insertString(int offset, String str, AttributeSet attr) throws BadLocationException {
+            if (str == null) {
+                return;
+            }
+            if ((getLength() + str.length()) <= limit) {
+
+                //以下的代码用于控制输入文本框的字符串类型是数字还是纯字母等
+                char[] upper = str.toCharArray();
+                String insert = "";
+                int length = 0;
+                for (int i = 0; i < upper.length; i++) {
+                    if (upper[i] >= '0' && upper[i] <= '9') {
+                        insert += upper[i];
+                    }
+                }
+                super.insertString(offset, insert, attr);
+            }
+        }
+        private int limit;
     }
 
     /**
@@ -30,10 +106,11 @@ public class UserInfo extends javax.swing.JFrame {
         jButtonYes = new javax.swing.JButton();
         jSplitPane1 = new javax.swing.JSplitPane();
         jPanel = new javax.swing.JPanel();
-        jRadioButtonAccount = new javax.swing.JRadioButton();
-        jButtonImport = new javax.swing.JButton();
+        jButtonSwitch = new javax.swing.JButton();
         jButtonDelete = new javax.swing.JButton();
         jButtonNew = new javax.swing.JButton();
+        jScrollPane1 = new javax.swing.JScrollPane();
+        jListAccount = new javax.swing.JList();
         jPanelDisplayInfo = new javax.swing.JPanel();
         jLabelEMail = new javax.swing.JLabel();
         jLabelPwd = new javax.swing.JLabel();
@@ -49,21 +126,38 @@ public class UserInfo extends javax.swing.JFrame {
 
         jButtonNo.setFont(new java.awt.Font("微软雅黑", 0, 14)); // NOI18N
         jButtonNo.setText("取消");
+        jButtonNo.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButtonNoActionPerformed(evt);
+            }
+        });
 
         jButtonYes.setFont(new java.awt.Font("微软雅黑", 0, 14)); // NOI18N
         jButtonYes.setText("确定");
+        jButtonYes.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButtonYesActionPerformed(evt);
+            }
+        });
 
         jPanel.setBorder(javax.swing.BorderFactory.createLineBorder(new java.awt.Color(204, 204, 204)));
-        jPanel.setName("");
+        jPanel.setName(""); // NOI18N
 
-        jRadioButtonAccount.setFont(new java.awt.Font("微软雅黑", 0, 14)); // NOI18N
-        jRadioButtonAccount.setText("545235009@qq.com");
-
-        jButtonImport.setFont(new java.awt.Font("微软雅黑", 0, 12)); // NOI18N
-        jButtonImport.setText("导入");
+        jButtonSwitch.setFont(new java.awt.Font("微软雅黑", 0, 12)); // NOI18N
+        jButtonSwitch.setText("切换");
+        jButtonSwitch.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButtonSwitchActionPerformed(evt);
+            }
+        });
 
         jButtonDelete.setFont(new java.awt.Font("微软雅黑", 0, 12)); // NOI18N
         jButtonDelete.setText("删除");
+        jButtonDelete.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButtonDeleteActionPerformed(evt);
+            }
+        });
 
         jButtonNew.setFont(new java.awt.Font("微软雅黑", 0, 12)); // NOI18N
         jButtonNew.setText("新建");
@@ -73,6 +167,8 @@ public class UserInfo extends javax.swing.JFrame {
             }
         });
 
+        jScrollPane1.setViewportView(jListAccount);
+
         javax.swing.GroupLayout jPanelLayout = new javax.swing.GroupLayout(jPanel);
         jPanel.setLayout(jPanelLayout);
         jPanelLayout.setHorizontalGroup(
@@ -80,24 +176,24 @@ public class UserInfo extends javax.swing.JFrame {
             .addGroup(jPanelLayout.createSequentialGroup()
                 .addContainerGap()
                 .addGroup(jPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jRadioButtonAccount, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 0, Short.MAX_VALUE)
                     .addGroup(jPanelLayout.createSequentialGroup()
                         .addComponent(jButtonNew)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(jButtonImport)
+                        .addComponent(jButtonSwitch)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(jButtonDelete)
-                        .addGap(0, 9, Short.MAX_VALUE)))
+                        .addGap(0, 5, Short.MAX_VALUE)))
                 .addContainerGap())
         );
         jPanelLayout.setVerticalGroup(
             jPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanelLayout.createSequentialGroup()
                 .addContainerGap()
-                .addComponent(jRadioButtonAccount)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 73, Short.MAX_VALUE)
+                .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 134, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                 .addGroup(jPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jButtonImport)
+                    .addComponent(jButtonSwitch)
                     .addComponent(jButtonDelete)
                     .addComponent(jButtonNew))
                 .addContainerGap())
@@ -125,6 +221,11 @@ public class UserInfo extends javax.swing.JFrame {
 
         jCheckBoxAutoReceive.setFont(new java.awt.Font("微软雅黑", 0, 12)); // NOI18N
         jCheckBoxAutoReceive.setText("自动收取邮件");
+        jCheckBoxAutoReceive.addChangeListener(new javax.swing.event.ChangeListener() {
+            public void stateChanged(javax.swing.event.ChangeEvent evt) {
+                jCheckBoxAutoReceiveStateChanged(evt);
+            }
+        });
 
         jLabel1.setFont(new java.awt.Font("微软雅黑", 0, 12)); // NOI18N
         jLabel1.setText("每隔");
@@ -148,7 +249,7 @@ public class UserInfo extends javax.swing.JFrame {
                         .addGap(42, 42, 42)
                         .addComponent(jLabel1)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(jTextFieldReceiveSequence, javax.swing.GroupLayout.PREFERRED_SIZE, 24, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addComponent(jTextFieldReceiveSequence, javax.swing.GroupLayout.PREFERRED_SIZE, 30, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(jLabel2))
                     .addComponent(jTextFieldEmail, javax.swing.GroupLayout.DEFAULT_SIZE, 267, Short.MAX_VALUE)
@@ -172,7 +273,7 @@ public class UserInfo extends javax.swing.JFrame {
                     .addComponent(jLabel1)
                     .addComponent(jTextFieldReceiveSequence, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(jLabel2))
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addContainerGap(56, Short.MAX_VALUE))
         );
 
         jSplitPane1.setLeftComponent(jPanelDisplayInfo);
@@ -213,8 +314,72 @@ public class UserInfo extends javax.swing.JFrame {
         // TODO add your handling code jButtonYes}//GEN-LAST:event_jPasswordFieldPwdActionPerformed
     }
         private void jButtonNewActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonNewActionPerformed
-        // TODO add your handling code here:
+            // 创建新账号
+            FrameFactory.getLoginFrame().setVisible(true);
+            //this.dispose();
     }//GEN-LAST:event_jButtonNewActionPerformed
+
+    private void jCheckBoxAutoReceiveStateChanged(javax.swing.event.ChangeEvent evt) {//GEN-FIRST:event_jCheckBoxAutoReceiveStateChanged
+        // TODO add your handling code here:
+        if (jCheckBoxAutoReceive.isSelected()) {
+            jTextFieldReceiveSequence.setEnabled(true);
+        } else {
+            jTextFieldReceiveSequence.setEnabled(false);
+        }
+    }//GEN-LAST:event_jCheckBoxAutoReceiveStateChanged
+
+    private void jButtonYesActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonYesActionPerformed
+        // TODO add your handling code here:
+        if(jCheckBoxAutoReceive.isSelected()){
+            int gap = Integer.parseInt(jTextFieldReceiveSequence.getText());
+            IAccountDao adao = new AccountDao();
+            Account a = AccountHandler.getLoginAccount();
+            a.setAutoReceive(1);
+            a.setCheckTime(gap);
+            System.out.println(adao.updateAccount(a));
+            AccountHandler.setLoginAccount(a);//更新后立马设置account
+            this.setVisible(false);
+        }
+    }//GEN-LAST:event_jButtonYesActionPerformed
+
+    private void jButtonSwitchActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonSwitchActionPerformed
+        // 切换账号
+        int index = jListAccount.getSelectedIndex();
+        if(index<0){
+            return ;
+        }
+        Account a = accountList.get(index);
+        if(a.equals(AccountHandler.getLoginAccount())){
+            return ;
+        }
+        AccountHandler.setLoginAccount(a);
+        this.setFrame();
+        FrameFactory.getMainFrame().setFrame();
+    }//GEN-LAST:event_jButtonSwitchActionPerformed
+
+    private void jButtonDeleteActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonDeleteActionPerformed
+        // 删除所选账号
+        int index = jListAccount.getSelectedIndex();
+        if(index<0){
+            return ;
+        }
+        Account a = accountList.get(index);
+        if(a.equals(AccountHandler.getLoginAccount())){
+            JOptionPane.showMessageDialog(this, "不可删除当前账户");
+            return;
+        }
+        int type = JOptionPane.showConfirmDialog(this, "确认删除 "+a.getA_account()+" 吗？", "删除", JOptionPane.YES_NO_OPTION);
+        if (type == JOptionPane.YES_OPTION) {
+            IAccountDao adao = new AccountDao();
+            adao.deleteAccount(a);
+            this.setFrame();
+        }
+    }//GEN-LAST:event_jButtonDeleteActionPerformed
+
+    private void jButtonNoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonNoActionPerformed
+        // 取消按钮
+        this.setVisible(false);
+    }//GEN-LAST:event_jButtonNoActionPerformed
 
     /**
      * @param args the command line arguments
@@ -251,7 +416,6 @@ public class UserInfo extends javax.swing.JFrame {
          * Create and display the form
          */
         java.awt.EventQueue.invokeLater(new Runnable() {
-
             public void run() {
                 new UserInfo().setVisible(true);
             }
@@ -259,19 +423,20 @@ public class UserInfo extends javax.swing.JFrame {
     }
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton jButtonDelete;
-    private javax.swing.JButton jButtonImport;
     private javax.swing.JButton jButtonNew;
     private javax.swing.JButton jButtonNo;
+    private javax.swing.JButton jButtonSwitch;
     private javax.swing.JButton jButtonYes;
     private javax.swing.JCheckBox jCheckBoxAutoReceive;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel2;
     private javax.swing.JLabel jLabelEMail;
     private javax.swing.JLabel jLabelPwd;
+    private javax.swing.JList jListAccount;
     private javax.swing.JPanel jPanel;
     private javax.swing.JPanel jPanelDisplayInfo;
     private javax.swing.JPasswordField jPasswordFieldPwd;
-    private javax.swing.JRadioButton jRadioButtonAccount;
+    private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JSplitPane jSplitPane1;
     private javax.swing.JTextField jTextFieldEmail;
     private javax.swing.JTextField jTextFieldReceiveSequence;

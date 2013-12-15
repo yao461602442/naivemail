@@ -1,5 +1,6 @@
 package org.gdufs.dao;
 
+import java.util.List;
 import org.gdufs.entity.*;
 /**
  * 定义账户对象操作接口
@@ -58,7 +59,11 @@ public interface IAccountDao  {
          * @return 若存在则返回账号id，不存在返回0
          */
         public int defaultAccount();
-            
         
-
+        /**
+         * 获取数据库中所有账号
+         * @return 
+         */
+        public List<Account> getAllAccount();
+            
 }

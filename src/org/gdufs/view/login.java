@@ -11,6 +11,7 @@ import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.SwingWorker;
 import javax.swing.plaf.IconUIResource;
+import org.gdufs.controller.FrameFactory;
 import org.gdufs.controller.LoginController;
 import org.gdufs.dao.impl.AccountDao;
 import org.gdufs.entity.Account;
@@ -31,6 +32,7 @@ public class login extends javax.swing.JFrame {
         jLabel4.setText(null);
         jLabel7.setVisible(false);
         setLocationRelativeTo(null);
+        this.setDefaultCloseOperation(JFrame.HIDE_ON_CLOSE);
     }
 
     static class LoginWorker extends SwingWorker<String, Object> {
@@ -56,9 +58,11 @@ public class login extends javax.swing.JFrame {
             //1.插入账号
             //插入之前查询要做查询！
             AccountDao adao = new AccountDao();
-            if (adao.checkAccount(account.getA_account(), account.getA_passwd()) != 1) {
+            if (adao.checkAccount(account.getA_account(), account.getA_passwd()) == 0) {
                 //数据库中没有此账号。插入
                 adao.insertAccount(account);
+            } else{
+                //数据库中有这个账号
             }
             //2.获取数据库中的账号
             Account ret = adao.queryAccount(account.getA_account(), account.getA_passwd());
@@ -68,6 +72,10 @@ public class login extends javax.swing.JFrame {
             java.awt.EventQueue.invokeLater(new Runnable() {
                 public void run() {
                     new ReceiveMail().setVisible(true);
+                    FrameFactory.getLoginFrame().setVisible(false);
+                    FrameFactory.getMainFrame().setVisible(false);
+                    FrameFactory.getUserInfoFrame().setVisible(false);
+                    FrameFactory.getUserInfoFrame().setFrame();
                 }
             });
         }
@@ -147,7 +155,7 @@ public class login extends javax.swing.JFrame {
         });
 
         jButton2.setFont(new java.awt.Font("微软雅黑", 0, 12)); // NOI18N
-        jButton2.setText("登录");
+        jButton2.setText("创建");
         jButton2.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jButton2ActionPerformed(evt);
@@ -238,7 +246,7 @@ public class login extends javax.swing.JFrame {
         // 退出操作
         int type = JOptionPane.showConfirmDialog(this, "确认退出吗？", "退出", JOptionPane.YES_NO_OPTION);
         if (type == JOptionPane.YES_OPTION) {
-            System.exit(0);
+            this.dispose();
         }
     }//GEN-LAST:event_jButton1ActionPerformed
 

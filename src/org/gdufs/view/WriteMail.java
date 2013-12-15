@@ -4,17 +4,77 @@
  */
 package org.gdufs.view;
 
+import java.text.DateFormat;
+import java.util.Date;
+import java.util.Locale;
+import javax.swing.JFrame;
+import javax.swing.JOptionPane;
+import javax.swing.JTextArea;
+import javax.swing.WindowConstants;
+import org.gdufs.dao.IMailDao;
+import org.gdufs.dao.impl.MailDao;
+import org.gdufs.entity.Account;
+import org.gdufs.entity.Mail;
+import org.gdufs.entity.MailBox;
+import org.gdufs.pub.AccountHandler;
+import org.gdufs.pub.MailServiceFactory;
+import org.gdufs.service.IMailService;
+
 /**
  *
  * @author Administrator
  */
 public class WriteMail extends javax.swing.JFrame {
 
+    private Mail mail = null;
+
     /**
      * Creates new form WriteMail
      */
     public WriteMail() {
         initComponents();
+        this.setLocationRelativeTo(null);
+        this.setDefaultCloseOperation(JFrame.HIDE_ON_CLOSE);
+    }
+
+    public void setMail(Mail m) {
+        mail = m;
+    }
+    
+    private void clearAll(){
+        this.mail = null;
+        jTextFieldReceiver.setText("");
+        jTextPaneContent.setText("");
+        jTextFieldTopic.setText("");
+    }
+    
+    private void filledMail(int mailBox){
+        //填充Mail的内容
+        if(mail==null){
+            this.mail = new Mail();
+        }
+        Account a = AccountHandler.getLoginAccount();
+        String from = a.getA_account();
+        String to = jTextFieldReceiver.getText().trim();
+        String content = jTextPaneContent.getText();
+        String subject = jTextFieldTopic.getText();
+        DateFormat dateFormat = DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.MEDIUM, Locale.CHINA);
+        mail.setA_id(a.getA_id());
+        mail.setM_receiver(to);
+        mail.setM_sender(from);
+        mail.setM_content(content);
+        mail.setM_title(subject);
+        mail.setB_id(mailBox);
+        mail.setM_time(dateFormat.format(new Date()));
+    }
+
+    public void setFrame() {
+        if (mail == null) {
+            return;
+        }
+        jTextFieldReceiver.setText(mail.getM_receiver());
+        jTextFieldTopic.setText(mail.getM_title());
+        jTextPaneContent.setText(mail.getM_content());
     }
 
     /**
@@ -38,7 +98,7 @@ public class WriteMail extends javax.swing.JFrame {
         jTextPaneContent = new javax.swing.JTextPane();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
-        setTitle("未命名-写邮件- 14:01:54 已保存");
+        setTitle("未命名-写邮件");
 
         jLabelReceiver.setFont(new java.awt.Font("微软雅黑", 0, 12)); // NOI18N
         jLabelReceiver.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
@@ -50,9 +110,19 @@ public class WriteMail extends javax.swing.JFrame {
 
         jButtonSend.setFont(new java.awt.Font("微软雅黑", 0, 12)); // NOI18N
         jButtonSend.setText("发送");
+        jButtonSend.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButtonSendActionPerformed(evt);
+            }
+        });
 
         jButtonSave.setFont(new java.awt.Font("微软雅黑", 0, 12)); // NOI18N
         jButtonSave.setText("存草稿");
+        jButtonSave.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButtonSaveActionPerformed(evt);
+            }
+        });
 
         jButtonClose.setFont(new java.awt.Font("微软雅黑", 0, 12)); // NOI18N
         jButtonClose.setText("关闭");
@@ -112,6 +182,29 @@ public class WriteMail extends javax.swing.JFrame {
         pack();
     }// </editor-fold>//GEN-END:initComponents
 
+    private void jButtonSaveActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonSaveActionPerformed
+        // 存草稿 把mail插入数据库           
+        this.filledMail(MailBox.DRAFTS); //放到草稿箱
+        IMailDao mdao = new MailDao();
+        mdao.insertMail(mail);
+        //从数据库中取出来，方便下次保存
+        this.setTitle("未命名-写邮件  已保存");
+    }//GEN-LAST:event_jButtonSaveActionPerformed
+
+    private void jButtonSendActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonSendActionPerformed
+        // 发送邮件按钮
+        //填充内容，保存邮件
+        this.filledMail(MailBox.SENTBOX);
+        IMailDao mdao = new MailDao();
+        mdao.insertMail(mail);
+        //发送邮件
+        IMailService ms = MailServiceFactory.getMailService();
+        ms.sendMail(AccountHandler.getLoginAccount(), mail);
+        JOptionPane.showMessageDialog(this, "后台正在进行发送邮件操作");
+        clearAll();
+        this.setVisible(false);
+    }//GEN-LAST:event_jButtonSendActionPerformed
+
     /**
      * @param args the command line arguments
      */
@@ -147,7 +240,6 @@ public class WriteMail extends javax.swing.JFrame {
          * Create and display the form
          */
         java.awt.EventQueue.invokeLater(new Runnable() {
-
             public void run() {
                 new WriteMail().setVisible(true);
             }
