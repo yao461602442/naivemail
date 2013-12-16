@@ -42,6 +42,8 @@ import org.gdufs.entity.MailBox;
 import org.gdufs.entity.MailServiceAddress;
 import org.gdufs.pub.AccountHandler;
 import org.gdufs.pub.MailServiceFactory;
+import org.gdufs.pub.TagFilter;
+import org.gdufs.service.IClassifier;
 import org.gdufs.service.IMailService;
 
 public class MailService implements IMailService {
@@ -108,6 +110,7 @@ public class MailService implements IMailService {
         //设置邮件a_id
         for (int i = 0; i < mails.length; ++i) {
             mails[i].setA_id(account.getA_id());
+            
         }
         //把mails转为List
         List<Mail> mailList = new ArrayList<Mail>(mails.length);
@@ -144,7 +147,6 @@ public class MailService implements IMailService {
         for (int i = 0; i < mailList.size(); ++i) {
             mailList.get(i).setA_id(account.getA_id());
         }
-
         return mailList;
     }
 
@@ -244,7 +246,8 @@ public class MailService implements IMailService {
 
             //检查
             MailDao mdao = new MailDao();
-            if (mdao.checkUnique(subject, from, time) == 0) {
+            Account a = AccountHandler.getLoginAccount();
+            if (mdao.checkUnique(a, subject, from, time) == 0) {
                 Mail currentMail = ms.receiveOneMail(this.mimeMessage);
                 synchronized (mailList) {
                     mailList.add(currentMail);
@@ -463,18 +466,8 @@ public class MailService implements IMailService {
             bodyText.append(getMailContent((Part) part.getContent()));
         } else {
         }
-        return bodyText.toString();
+        //将获得的字符去除标签
+        return TagFilter.removeHtmlTag(bodyText.toString());
     }
 
-    public static void main(String[] args) {
-        IMailService ms = MailServiceFactory.getMailService();
-        Account a = AccountHandler.getLoginAccount();
-        System.out.println(a);
-        Mail m = new Mail();
-        m.setM_content("我是郑景耀");
-        m.setM_receiver("461602442@qq.com<461602442@qq.com>");
-        m.setM_sender("mitcn<mitcn@163.com>");
-        m.setM_title("我试一下能不能自动发");
-        ms.sendMail(a, m);
-    }
 }

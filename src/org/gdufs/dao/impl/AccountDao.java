@@ -51,7 +51,6 @@ public class AccountDao implements IAccountDao {
         PreparedStatement pstat = null;
         int ret = 0;
         String sql = "update account set a_passwd=? , autoreceive=? , checktime=? where a_id=?";
-        //update account set a_passwd="a245412401" , autoreceive=1, checktime=13 where a_id=2
         try {
             conn = DBUtil.getConnection();
             pstat = conn.prepareStatement(sql);

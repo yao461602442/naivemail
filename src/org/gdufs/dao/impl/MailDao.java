@@ -209,7 +209,7 @@ public class MailDao implements IMailDao {
     }
 
     @Override
-    public int checkUnique(String subject, String from, String sentTime) {
+    public int checkUnique(Account account, String subject, String from, String sentTime) {
         int ret = 0;
         Connection conn = null;
         PreparedStatement prep = null;

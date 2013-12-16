@@ -4,7 +4,6 @@
  */
 package org.gdufs.view;
 
-import com.sun.org.apache.xpath.internal.axes.SubContextList;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
@@ -32,7 +31,9 @@ import org.gdufs.entity.MailServiceAddress;
 import org.gdufs.pub.AccountHandler;
 import org.gdufs.pub.MailServiceFactory;
 import org.gdufs.pub.MailSorter;
+import org.gdufs.service.IClassifier;
 import org.gdufs.service.IMailService;
+import org.gdufs.service.impl.Classifier;
 
 /**
  *
@@ -50,12 +51,12 @@ public class MAIL extends javax.swing.JFrame {
     public MAIL() {
         initComponents();
         //调整主界面大小问题
-        double heightAdjustBefore = this.getHeight();
-        Dimension screenSize =Toolkit.getDefaultToolkit().getScreenSize();
-        double heightAdjustNow = screenSize.getHeight()*0.9;
-        Dimension adjust = new Dimension();
-        adjust.setSize(this.getWidth(), heightAdjustNow);
-        this.setSize(adjust);
+//        double heightAdjustBefore = this.getHeight();
+//        Dimension screenSize =Toolkit.getDefaultToolkit().getScreenSize();
+//        double heightAdjustNow = screenSize.getHeight()*0.9;
+//        Dimension adjust = new Dimension();
+//        adjust.setSize(this.getWidth(), heightAdjustNow);
+//        this.setSize(adjust);
         //调整其它界面大小
 //        double ratio = heightAdjustNow/heightAdjustBefore;
 //        double treeMailBoxHeight = jTreeMailBox.getHeight()*ratio;
@@ -69,9 +70,9 @@ public class MAIL extends javax.swing.JFrame {
 //        jListMailList.setSize(listD);
         
         //设置属性
+        this.jTextAreaContent.setEditable(false);
         this.setResizable(false);
         jButtonDelete.setEnabled(false);
-        jButtonReSend.setEnabled(false);
         jButtonReply.setEnabled(false);
         receiveWorker = new ReceiveMailWorker(this, jButtonReceiveMail);
         jListMailList.setCellRenderer(new MyRenderer());
@@ -168,6 +169,9 @@ public class MAIL extends javax.swing.JFrame {
             if (mailList.size() > 0) {
                 this.setShowMail(mailList.get(0));
                 jListMailList.setSelectedIndex(0);
+             }else{
+            	 //mailList没内容
+            	 this.setShowMail(new Mail());
              }
         } else{
             this.setShowMail(mailList.get(selectedIndex));            
@@ -186,7 +190,6 @@ public class MAIL extends javax.swing.JFrame {
         
         //选择了特定邮件后，设置删除、转发、回复按钮可用!草稿箱中回复按钮不可以
         if(m.getB_id() != MailBox.DRAFTS){
-            jButtonReSend.setEnabled(true);
             jButtonReply.setEnabled(true);
         }
         jButtonDelete.setEnabled(true);
@@ -219,6 +222,9 @@ public class MAIL extends javax.swing.JFrame {
 
             //2.垃圾邮件过滤
             frame.setTitle("NaiveMail   收取邮件完成，正在识别垃圾邮件..");
+            int length = mailList.size();
+            IClassifier classfier = new Classifier();
+            classfier.categoryBatchMail(mailList);
             //3.插入新邮件到数据库中
             frame.setTitle("NaiveMail   识别完成，正在保存操作结果..");
             IMailDao mdao = new MailDao();
@@ -250,7 +256,6 @@ public class MAIL extends javax.swing.JFrame {
         jButtonReceiveMail = new javax.swing.JButton();
         jButtonWriteMail = new javax.swing.JButton();
         jButtonReply = new javax.swing.JButton();
-        jButtonReSend = new javax.swing.JButton();
         jButtonDelete = new javax.swing.JButton();
         jButtonSearch = new javax.swing.JButton();
         jButtonUserManager = new javax.swing.JButton();
@@ -309,13 +314,6 @@ public class MAIL extends javax.swing.JFrame {
             }
         });
 
-        jButtonReSend.setFont(new java.awt.Font("微软雅黑", 0, 14)); // NOI18N
-        jButtonReSend.setIcon(new javax.swing.ImageIcon(getClass().getResource("/image/forward.png"))); // NOI18N
-        jButtonReSend.setText("转发");
-        jButtonReSend.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
-        jButtonReSend.setInheritsPopupMenu(true);
-        jButtonReSend.setMargin(new java.awt.Insets(4, 4, 4, 4));
-
         jButtonDelete.setFont(new java.awt.Font("微软雅黑", 0, 14)); // NOI18N
         jButtonDelete.setIcon(new javax.swing.ImageIcon(getClass().getResource("/image/tool_archive.png"))); // NOI18N
         jButtonDelete.setText("删除");
@@ -362,10 +360,8 @@ public class MAIL extends javax.swing.JFrame {
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jButtonReply)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jButtonReSend)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jButtonDelete)
-                .addGap(71, 71, 71)
+                .addGap(144, 144, 144)
                 .addComponent(jTextFieldSearch, javax.swing.GroupLayout.PREFERRED_SIZE, 213, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                 .addComponent(jButtonSearch)
@@ -376,24 +372,19 @@ public class MAIL extends javax.swing.JFrame {
         jPanel1Layout.setVerticalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel1Layout.createSequentialGroup()
-                .addGap(12, 12, 12)
-                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(jPanel1Layout.createSequentialGroup()
-                        .addComponent(jButtonDelete, javax.swing.GroupLayout.PREFERRED_SIZE, 0, Short.MAX_VALUE)
-                        .addContainerGap())
-                    .addGroup(jPanel1Layout.createSequentialGroup()
-                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.CENTER)
-                            .addComponent(jButtonUserManager, javax.swing.GroupLayout.PREFERRED_SIZE, 28, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(jTextFieldSearch, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(jButtonSearch, javax.swing.GroupLayout.PREFERRED_SIZE, 26, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(jButtonReSend, javax.swing.GroupLayout.PREFERRED_SIZE, 0, Short.MAX_VALUE)
-                            .addComponent(jButtonReply, javax.swing.GroupLayout.PREFERRED_SIZE, 0, Short.MAX_VALUE)
-                            .addComponent(jButtonWriteMail, javax.swing.GroupLayout.PREFERRED_SIZE, 0, Short.MAX_VALUE)
-                            .addComponent(jButtonReceiveMail, javax.swing.GroupLayout.PREFERRED_SIZE, 27, javax.swing.GroupLayout.PREFERRED_SIZE))
-                        .addGap(0, 10, Short.MAX_VALUE))))
+                .addGap(11, 11, 11)
+                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.CENTER)
+                    .addComponent(jButtonUserManager, javax.swing.GroupLayout.PREFERRED_SIZE, 28, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(jTextFieldSearch, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(jButtonSearch, javax.swing.GroupLayout.PREFERRED_SIZE, 26, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(jButtonReply, javax.swing.GroupLayout.PREFERRED_SIZE, 0, Short.MAX_VALUE)
+                    .addComponent(jButtonWriteMail, javax.swing.GroupLayout.PREFERRED_SIZE, 0, Short.MAX_VALUE)
+                    .addComponent(jButtonReceiveMail, javax.swing.GroupLayout.PREFERRED_SIZE, 27, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(jButtonDelete, javax.swing.GroupLayout.PREFERRED_SIZE, 0, Short.MAX_VALUE))
+                .addGap(0, 10, Short.MAX_VALUE))
         );
 
-        jPanel1Layout.linkSize(javax.swing.SwingConstants.VERTICAL, new java.awt.Component[] {jButtonReSend, jButtonReceiveMail, jButtonReply, jButtonSearch, jButtonWriteMail, jTextFieldSearch});
+        jPanel1Layout.linkSize(javax.swing.SwingConstants.VERTICAL, new java.awt.Component[] {jButtonReceiveMail, jButtonReply, jButtonSearch, jButtonWriteMail, jTextFieldSearch});
 
         jTreeMailBox.setBackground(new java.awt.Color(196, 235, 255));
         jTreeMailBox.setFont(new java.awt.Font("微软雅黑", 0, 18)); // NOI18N
@@ -552,7 +543,7 @@ public class MAIL extends javax.swing.JFrame {
                     .addComponent(jPanel2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addGroup(javax.swing.GroupLayout.Alignment.LEADING, layout.createSequentialGroup()
                         .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 728, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(0, 0, Short.MAX_VALUE))
+                        .addGap(0, 13, Short.MAX_VALUE))
                     .addComponent(jPanel5, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addContainerGap())
         );
@@ -579,7 +570,6 @@ public class MAIL extends javax.swing.JFrame {
         //System.out.println(selectedNode.toString());
         //设定删除、转发、回复不可用
         jButtonDelete.setEnabled(false);
-        jButtonReSend.setEnabled(false);
         jButtonReply.setEnabled(false);
         //清空邮件显示列表
         jListMailList.setListData(new String[]{});
@@ -761,7 +751,6 @@ public class MAIL extends javax.swing.JFrame {
     }
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton jButtonDelete;
-    private javax.swing.JButton jButtonReSend;
     private javax.swing.JButton jButtonReceiveMail;
     private javax.swing.JButton jButtonReply;
     private javax.swing.JButton jButtonSearch;

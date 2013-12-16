@@ -246,7 +246,13 @@ public class login extends javax.swing.JFrame {
         // 退出操作
         int type = JOptionPane.showConfirmDialog(this, "确认退出吗？", "退出", JOptionPane.YES_NO_OPTION);
         if (type == JOptionPane.YES_OPTION) {
-            this.dispose();
+        	//做个判断，是否第一次操作
+        	if(AccountHandler.getLoginAccount() == null){
+        		this.dispose();
+        		System.exit(1);
+        	}else{
+        		this.setVisible(false);
+        	}
         }
     }//GEN-LAST:event_jButton1ActionPerformed
 

@@ -63,7 +63,7 @@ public interface IMailDao {
 	 * @param sentTime 发送时间
 	 * @return
 	 */
-	public int checkUnique(String subject, String from, String sentTime);
+	public int checkUnique(Account account, String subject, String from, String sentTime);
         
         /**
          * 根据关键字搜索邮件
