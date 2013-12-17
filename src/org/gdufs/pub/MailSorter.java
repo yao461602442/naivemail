@@ -23,6 +23,9 @@ public class MailSorter {
      * 把传过来的mailList按照时间“从近到远”排序
      * @param list 
      */
+	private MailSorter(){
+		//
+	}
     public static void sortByTime(List<Mail> list){
         Collections.sort(list, new Comparator<Mail>(){
 

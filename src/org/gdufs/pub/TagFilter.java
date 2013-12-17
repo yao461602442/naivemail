@@ -6,6 +6,7 @@ package org.gdufs.pub;
  *
  */
 public class TagFilter {
+	
 	public static String removeHtmlTag(String content){
 		return content.replaceAll("<.*?>", "");
 	}

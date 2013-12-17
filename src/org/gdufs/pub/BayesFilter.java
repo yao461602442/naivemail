@@ -228,25 +228,30 @@ public class BayesFilter {
 			//-----------------------返回true表示这封邮件是正常的-------------------------------
 			
 			//-----------假设100份邮件中有90封是正常的,10封是垃圾邮件,由贝叶斯原理，乘上相应的比例--------
-			counta *= 90; countb *= 10;
+			counta *= 40; countb *= 60;
 			
 			//-----------下面三行代码属于调试使用,用于显示文本词组是否出现的提示信息--------------------
-			String markWord = "";
-			if(!mka && !mkb) markWord = "Not fitting appearance!";
-			else markWord = "Some words Appearance!";
-			System.out.println("正常比率： "+counta + " 垃圾比率： "+countb + '\n' + markWord);
+			//String markWord = "";
+			//if(!mka && !mkb) markWord = "Not fitting appearance!";
+			//else markWord = "Some words Appearance!";
+			//System.out.println(mka + "  " + mkb);
+			//System.out.println("正常比率： "+counta + " 垃圾比率： "+countb + '\n' + markWord);
 			
 			//-----------如果文本的每个词组在两个向量器都没有出现，那么当做是正常邮件--------------------
 			if(!mka && !mkb) return true;
-			
 			//-----------如果在两个文本出现的概率都很小，那么也当做是正常邮件--------------------------
-			if(counta < 1.0E-200 && countb < 1.0E-200) return true;
+			if(counta < 1.0E-130 && countb < 1.0E-130) return true;
+			
+			if(countb < 1.0E-240) return false;
+			if(counta < 1.0E-240) return true;
 			
 			/*-----------根据贝叶斯，词频概率的积小的出现的次数就大，--------------------------------
 			 * ----------当正常出现的频率积小，说明次数多于在垃圾邮件出现多，--------------------------
 			 * ----------所以返回true表示为正常邮件的概率大---------------------------------------
 			 */
-			if(counta < countb) return true;
+			if(mka && mkb && counta < countb ||
+					!mka && mkb && counta > countb ||
+					mka && !mkb && counta < countb) return true;
 		}
 		catch (Exception ex) {
 			ex.printStackTrace();
