@@ -237,11 +237,6 @@ public class MailDao implements IMailDao {
 
 
     @Override
-    public int getMailBoxName(Mail mail) {
-        throw new UnsupportedOperationException("Not supported yet.");
-    }
-
-    @Override
     public List<Mail> searchMail(Account account, String key) {
         Connection conn = DBUtil.getConnection();
         PreparedStatement pstat = null;
