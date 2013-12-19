@@ -9,14 +9,6 @@ import java.util.*;
 public interface IMailDao {
 
 	/**
-	 * 查询邮件对象所属文件夹
-	 * 
-	 * @param mail
-	 * @return 返回邮件对象所属文件夹名
-	 */
-	public int getMailBoxName(Mail mail);
-
-	/**
 	 * 更新邮件
 	 * 
 	 * @param mail
