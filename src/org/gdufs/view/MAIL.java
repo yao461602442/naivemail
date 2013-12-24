@@ -625,35 +625,47 @@ public class MAIL extends javax.swing.JFrame {
         // 删除特定邮件
         //获取被选定的邮件        
         int index = jListMailList.getSelectedIndex();
-        if (index < 0) {
+        if (index < 0 || mailList == null || mailList.size()<=0) {
             return;
         }
         IMailDao mdao = new MailDao();
-        if (mailList != null && mailList.size() > 0) {
-            //把该邮件移到已删除
-            Mail mail = mailList.get(index);
-            if (mail.getB_id() == MailBox.DELETEDBOX) {
-                //已在垃圾箱内，询问是否删除！
-                int type = JOptionPane.showConfirmDialog(this, "确认删除吗？", "删除", JOptionPane.YES_NO_OPTION);
-                if (type == JOptionPane.YES_OPTION) {
-                    mdao.deleteMail(mail.getM_id());
-                }
-            } else {
-                //把邮件移动到垃圾箱
-                mail.setB_id(MailBox.DELETEDBOX);
-                mdao.updateMail(mail);
+        Mail mail = mailList.get(index);
+        int length = mailListModel.getSize();
+        //1.邮件在已删除列表中
+        if(mail.getB_id() == MailBox.DELETEDBOX){
+        	//询问是否确认删除！
+            int type = JOptionPane.showConfirmDialog(this, "确认删除吗？", "删除", JOptionPane.YES_NO_OPTION);
+            if (type == JOptionPane.YES_OPTION) {
+                mdao.deleteMail(mail.getM_id());
+                mailListModel.remove(index);
+                //设置显示被删除的下一封
+	            if (mailList.size() > 0) {
+	            	if(index == length-1){
+	            		index--;
+	            	}
+	                this.setShowMail(mailList.get(index));
+	                jListMailList.setSelectedIndex(index);
+	            } else {
+	                this.setShowMail(null);
+	            }
             }
-            //删除邮件后更新界面
-            //从列表中移除邮件
+        }else {
+        //2.邮件在其它列表中,则把邮件移动到垃圾箱
+        	mail.setB_id(MailBox.DELETEDBOX);
+            mdao.updateMail(mail);
             mailList.remove(index);
             mailListModel.remove(index);
             if (mailList.size() > 0) {
-                this.setShowMail(mailList.get(0));
-                jListMailList.setSelectedIndex(0);
+            	if(index == length-1){
+            		index--;
+            	}
+                this.setShowMail(mailList.get(index));
+                jListMailList.setSelectedIndex(index);                
             } else {
                 this.setShowMail(null);
             }
-        }
+        }                
+        
     }//GEN-LAST:event_jButtonDeleteActionPerformed
 
     private void jButtonSearchActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonSearchActionPerformed

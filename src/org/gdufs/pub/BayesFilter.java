@@ -27,22 +27,28 @@ public class BayesFilter {
 	}
 	public static void main(String[] args) {
 		//----根据已经做好的垃圾邮件分词文本词频表和正常邮件分词文本词频表，进行频率计算-----
-		
+		//buildTable();//应该放在静态函数函数里
 		//----下面的函数是用于检测分类效果，分类样本是训练集--------------------------
-		//runForTest();
+		runForTest();
 	}
 	public static Map<String,Double> hamMap = new HashMap<String,Double>();
 	public static Map<String,Double> spamMap = new HashMap<String,Double>();
+	public static Map<String,Integer> hamMapWords = new HashMap<String,Integer>();
+	public static Map<String,Integer> spamMapWords = new HashMap<String,Integer>();
+	public static int vocabulary = 600;
+	public static int totalHamWords = 0;
+	public static int totalSpamWords = 0;
 	public static void runForTest(){
 		buildTable();
+
 		testAns[0] = testAns[1] = testAns[2] = testAns[3];
-		String fileName = "e:/mailset/trec06c/data/";
+		String fileName = "trec06c/data/";
 		
 		//----------------------------用于校验结果--------------------------
 		boolean vis[][] = new boolean[223][310];
 		for(int i=0;i<216;i++)for(int j=0;j<300;j++)
 				vis[i][j] = false;
-		String testFile = "E:/mailset/trec06c/full/index";
+		String testFile = "trec06c/full/index";
 		try{
 			BufferedReader br =
 					new BufferedReader(
@@ -63,7 +69,7 @@ public class BayesFilter {
 		}
 		//-----------vis[][] -> true : SPAM , false : HAM---------------
 		
-		for(int i=80;i<100;i++) for(int j=0;j<300;j++){
+		for(int i=0;i<215;i++) for(int j=0;j<300;j++){
 			String path = getStr(i) + "/" + getStr(j);
 			txt = "";
 			try{
@@ -107,7 +113,9 @@ public class BayesFilter {
 	public static void buildTable(){
 		String hamPath = "hamword600";
 		String spamPath = "spamword600";
+		vocabulary = 600;
 		hamMap.clear(); spamMap.clear();
+		hamMapWords.clear(); spamMapWords.clear();
 		int hamSum = 0 , spamSum = 0;
 		
 		//----------------获取正常邮件分词集里的频数和--------------
@@ -122,6 +130,7 @@ public class BayesFilter {
 				int tmp = Integer.parseInt(word[1]);
 				hamSum += tmp;
 			}
+			totalHamWords = hamSum;
 			br.close();
 		}
 		catch(Exception ex){
@@ -137,12 +146,14 @@ public class BayesFilter {
 				String word[] = line.split(" ");
 				double tmp = Double.parseDouble(word[1]);
 				double rate = tmp / hamSum * 10;
+				int tmpWords = Integer.parseInt(word[1]);
 				hamMap.put(word[0],rate);
+				hamMapWords.put(word[0],tmpWords);
 			}
 			br.close();
 			
 			//Set<String> set = hamMap.keySet();
-			//for(String s:set) System.out.println( s + " " + hamMap.get(s));
+			//for(String s:set) System.out.println( s + " " + hamMapWords.get(s));
 		}
 		catch(Exception ex){
 			System.out.println(ex.toString());
@@ -160,6 +171,7 @@ public class BayesFilter {
 				int tmp = Integer.parseInt(word[1]);
 				spamSum += tmp;
 			}
+			totalSpamWords = spamSum;
 			br.close();
 		}
 		catch(Exception ex){
@@ -175,21 +187,26 @@ public class BayesFilter {
 				String word[] = line.split(" ");
 				double tmp = Double.parseDouble(word[1]);
 				double rate = tmp / spamSum * 10;
+				int tmpWords = Integer.parseInt(word[1]);
 				spamMap.put(word[0],rate);
+				spamMapWords.put(word[0],tmpWords);
 			}
 			br.close();
 			
 			//Set<String> set = spamMap.keySet();
-			//for(String s:set) System.out.println( s + " " + spamMap.get(s));
+			//for(String s:set) System.out.println( s + " " + spamMapWords.get(s));
 		}
 		catch(Exception ex){
 			System.out.println(ex.toString());
 		}
 	}
-
+	static public double log10(double value) {
+		return Math.log(value) / Math.log(10);
+	}
+	
 	public static boolean testForSpam(String str){
-		//----------------处理一行中文语句，进行分词--------------------------
 		buildTable();
+		//----------------处理一行中文语句，进行分词--------------------------
 		try {
 			NLPIR testNLPIR = new NLPIR();
 			String argu = ".";
@@ -208,7 +225,7 @@ public class BayesFilter {
 			String words[] = nativeStr.split(" ");
 			
 			//-------用counta，countb计算词频，如果没有出现该单词，乘1.0，一下忽略该步骤 *1.0操作步骤----------------
-			double counta = 1.0 , countb = 1.0;
+			double counta = 0.0 , countb = 0.0;
 			
 			//-------mka , mkb 用于检测接受检测的文本里单词在向量器里是否出现，如果没有出现，默认为正常邮件--------------
 			boolean mka = false , mkb = false;
@@ -216,19 +233,26 @@ public class BayesFilter {
 			//-------分别在正常邮件向量器(频率表)和垃圾邮件向量器(频率表)里检测文本里的词组出现的频率，相乘（贝叶斯原理）-----
 			for(String s : words){
 				if(hamMap.containsKey(s)){
-					counta *= hamMap.get(s);
+					counta += (int)-log10((hamMapWords.get(s) + 1)/(totalHamWords+vocabulary));
 					mka = true;              //表示文本的词组在正常邮件向量器出现过
 				}
+				else{
+					counta += (int)-log10(1.0/600);
+				}
 				if(spamMap.containsKey(s)){
-					countb *= spamMap.get(s);
+					countb += (int)-log10((spamMapWords.get(s) + 1)/(totalSpamWords+vocabulary));
 					mkb = true;				 //表示文本的词组在垃圾邮件向量器出想过
 				}
-				
+				else{
+					countb += (int)-log10(1.0/600);
+				}
+				//System.out.println(counta + " " + countb);
 			}
 			//-----------------------返回true表示这封邮件是正常的-------------------------------
-			
-			//-----------假设100份邮件中有90封是正常的,10封是垃圾邮件,由贝叶斯原理，乘上相应的比例--------
-			counta *= 40; countb *= 60;
+			//-假设20411+1322+30745+12022份邮件中有20411+1322封是正常的,30745+12022封是垃圾邮件,由贝叶斯原理，乘上相应的比例-
+			counta += (int)-log10(21733.0/64500);
+			countb += (int)-log10(42767.0/64500);
+			counta = -counta; countb = -countb;
 			
 			//-----------下面三行代码属于调试使用,用于显示文本词组是否出现的提示信息--------------------
 			//String markWord = "";
@@ -240,10 +264,10 @@ public class BayesFilter {
 			//-----------如果文本的每个词组在两个向量器都没有出现，那么当做是正常邮件--------------------
 			if(!mka && !mkb) return true;
 			//-----------如果在两个文本出现的概率都很小，那么也当做是正常邮件--------------------------
-			if(counta < 1.0E-130 && countb < 1.0E-130) return true;
+			//if(counta < Math.log(1.0E-130) && countb < Math.log(1.0E-130)) return true;
 			
-			if(countb < 1.0E-240) return false;
-			if(counta < 1.0E-240) return true;
+			//if(countb < Math.log(1.0E-240)) return false;
+			//if(counta < Math.log(1.0E-240)) return true;
 			
 			/*-----------根据贝叶斯，词频概率的积小的出现的次数就大，--------------------------------
 			 * ----------当正常出现的频率积小，说明次数多于在垃圾邮件出现多，--------------------------
@@ -251,7 +275,7 @@ public class BayesFilter {
 			 */
 			if(mka && mkb && counta < countb ||
 					!mka && mkb && counta > countb ||
-					mka && !mkb && counta < countb) return true;
+					mka && !mkb && counta < countb) return true; //正常邮件
 		}
 		catch (Exception ex) {
 			ex.printStackTrace();
