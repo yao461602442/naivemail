@@ -8,7 +8,13 @@ import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.Font;
+import java.awt.FontMetrics;
+import java.awt.PopupMenu;
 import java.awt.Toolkit;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.util.ArrayList;
 import java.util.List;
 import javax.swing.DefaultListCellRenderer;
@@ -17,7 +23,9 @@ import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JList;
+import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
+import javax.swing.JPopupMenu;
 import javax.swing.JProgressBar;
 import javax.swing.SwingWorker;
 import javax.swing.tree.DefaultMutableTreeNode;
@@ -36,222 +44,375 @@ import org.gdufs.service.IMailService;
 import org.gdufs.service.impl.Classifier;
 
 /**
- *
+ * 
  * @author Administrator
  */
 public class MAIL extends javax.swing.JFrame {
 
-    private List<Mail> mailList = null;
-    private DefaultListModel mailListModel = new DefaultListModel();
-    private ReceiveMailWorker receiveWorker = null;
+	private List<Mail> mailList = null;
+	private DefaultListModel mailListModel = new DefaultListModel();
+	private ReceiveMailWorker receiveWorker = null;
+	private JPopupMenu popupInbox = new JPopupMenu();
+	private JPopupMenu popupSpam = new JPopupMenu();
+	private static int popupSelectedItemIndex = 0;
+	private MouseAdapter inboxPopupMouseAction = new MouseAdapter() {
+		@Override
+		public void mouseClicked(MouseEvent e) {
+			maybeShowPopup(e);
+		}
 
-    /**
-     * Creates new form MAIL
-     */
-    public MAIL() {
-        initComponents();
-        //µ÷ÕûÖ÷½çÃæ´óĞ¡ÎÊÌâ
-//        double heightAdjustBefore = this.getHeight();
-//        Dimension screenSize =Toolkit.getDefaultToolkit().getScreenSize();
-//        double heightAdjustNow = screenSize.getHeight()*0.9;
-//        Dimension adjust = new Dimension();
-//        adjust.setSize(this.getWidth(), heightAdjustNow);
-//        this.setSize(adjust);
-        //µ÷ÕûÆäËü½çÃæ´óĞ¡
-//        double ratio = heightAdjustNow/heightAdjustBefore;
-//        double treeMailBoxHeight = jTreeMailBox.getHeight()*ratio;
-//        double listMailHeight = jListMailList.getHeight()*ratio;
-//        double textAreaContentHeight = jTextAreaContent.getHeight()*ratio;
-//        Dimension treeD = new Dimension();
-//        treeD.setSize(jTreeMailBox.getWidth(),treeMailBoxHeight);
-//        jTreeMailBox.setSize(treeD);
-//        Dimension listD = new Dimension();
-//        listD.setSize(jListMailList.getWidth(),listMailHeight);
-//        jListMailList.setSize(listD);
-        
-        //ÉèÖÃÊôĞÔ
-        this.jTextAreaContent.setEditable(false);
-        this.setResizable(false);
-        jButtonDelete.setEnabled(false);
-        jButtonReply.setEnabled(false);
-        receiveWorker = new ReceiveMailWorker(this, jButtonReceiveMail);
-        jListMailList.setCellRenderer(new MyRenderer());
-        this.setLocationRelativeTo(null);
-    }
+		@Override
+		public void mousePressed(MouseEvent e) {
+			jListMailList.setSelectedIndex(jListMailList.locationToIndex(e
+					.getPoint()));
+			maybeShowPopup(e);
+		}
 
-    class MyRenderer extends DefaultListCellRenderer {
+		@Override
+		public void mouseReleased(MouseEvent e) {
+			maybeShowPopup(e);
+		}
 
-        private Font font1;
-        public MyRenderer() {
-            this.font1 = getFont();
-            font1 = font1.deriveFont(Font.BOLD);
-        }
-        
-        @Override
-        public Component getListCellRendererComponent(JList list, Object value,
-                int index, boolean isSelected, boolean cellHasFocus) {
-            super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
-            Summary m = (Summary)value;
-            if(m.getRead()==0){
-                setFont(font1);
-            }            
-            return this;
-        }
-    }
-    
-    /**
-     * ÁĞ±íµÄÄÚÈİ
-     */
-    class Summary{
-        private String subject;
-        private String time;
-        private int read;
-        public Summary(String subject, String time, int read){
-            this.subject = subject;
-            this.time = time;
-            this.read = read;
-        }
+		private void maybeShowPopup(MouseEvent e) {
+			if (e.isPopupTrigger() && jListMailList.getSelectedIndex() != -1) {
+				Object selected = jListMailList.getModel().getElementAt(
+						jListMailList.getSelectedIndex());
+				popupSelectedItemIndex = jListMailList.getSelectedIndex();
+				popupInbox.show(e.getComponent(), e.getX(), e.getY());
+			}
+		}
+	};
+	
+	private MouseAdapter spamBoxPopupMouseAction = new MouseAdapter() {
+		@Override
+		public void mouseClicked(MouseEvent e) {
+			maybeShowPopup(e);
+		}
 
-        public int getRead() {
-            return read;
-        }
-        
-        @Override
-        public String toString(){
-            if (subject.length() > 10) {
-                subject = subject.substring(0, 10);
-                subject += "...";
-            }
-            String message = "";
-            if (subject == null || subject.isEmpty()) {
-                subject = "<ÎŞÖ÷Ìâ>";
-            }
-            if (time == null || time.isEmpty()) {
-                time = "";
-            }
-            message = (subject + "  " + time);
-            return message;
-        }
-    }
+		@Override
+		public void mousePressed(MouseEvent e) {
+			jListMailList.setSelectedIndex(jListMailList.locationToIndex(e
+					.getPoint()));
+			maybeShowPopup(e);
+		}
 
-    public MAIL setFrame() {
-        IMailDao mdao = new MailDao();
-        Account a = AccountHandler.getLoginAccount();
-        mailList = mdao.queryBoxAll(a, MailBox.INBOX);
-        MailSorter.sortByTime(mailList);
-        refreshJList();
-        //jListMailList.setFont(new Font(null, Font.BOLD, 20));
-        return this;
-    }
+		@Override
+		public void mouseReleased(MouseEvent e) {
+			maybeShowPopup(e);
+		}
 
-    /**
-     * Ë¢ĞÂÓÊ¼şÁĞ±íJList
-     *
-     * @return
-     */
-    private void refreshJList() {
-        //1.Ìî³äJListµÄÄÚÈİ
-        mailListModel.clear();
-        for (int i = 0; i < mailList.size(); ++i) {
-            String subject = mailList.get(i).getM_title();
-            String time = mailList.get(i).getM_time();
-            int read = mailList.get(i).getM_read();
-            Summary summary = new Summary(subject, time, read);
-            mailListModel.addElement(summary);
-        }
-        //System.out.println("mailListModel size : " + mailListModel.getSize());
-        //ÉèÖÃÓÊ¼şÁĞ±íÄÚÈİ       
-        jListMailList.setModel(mailListModel);
-        //2.ÉèÖÃ±»Ñ¡ÖĞ×´Ì¬£¬ÒÔ¼°ÓÒ±ßÕ¹Ê¾
-        int selectedIndex = jListMailList.getSelectedIndex();
-        if(selectedIndex==-1){
-            //ÉèÖÃÎªµÚÒ»·âÄ¬ÈÏÕ¹Ê¾
-            if (mailList.size() > 0) {
-                this.setShowMail(mailList.get(0));
-                jListMailList.setSelectedIndex(0);
-             }else{
-            	 //mailListÃ»ÄÚÈİ
-            	 this.setShowMail(new Mail());
-             }
-        } else{
-            this.setShowMail(mailList.get(selectedIndex));            
-        }        
-    }
+		private void maybeShowPopup(MouseEvent e) {
+			if (e.isPopupTrigger() && jListMailList.getSelectedIndex() != -1) {
+				Object selected = jListMailList.getModel().getElementAt(
+						jListMailList.getSelectedIndex());
+				popupSelectedItemIndex = jListMailList.getSelectedIndex();
+				popupSpam.show(e.getComponent(), e.getX(), e.getY());
+			}
+		}
+	}; 
 
-    private void setShowMail(Mail m) {
-        if (m == null) {
-            return;
-        }
-        jLabelSubject.setText(m.getM_title());
-        jLabelFrom.setText(m.getM_sender());
-        jLabelTo.setText(m.getM_receiver());
-        jLabelTime.setText(m.getM_time());
-        jTextAreaContent.setText(m.getM_content());
-        
-        //Ñ¡ÔñÁËÌØ¶¨ÓÊ¼şºó£¬ÉèÖÃÉ¾³ı¡¢×ª·¢¡¢»Ø¸´°´Å¥¿ÉÓÃ!²İ¸åÏäÖĞ»Ø¸´°´Å¥²»¿ÉÒÔ
-        if(m.getB_id() != MailBox.DRAFTS){
-            jButtonReply.setEnabled(true);
-        }
-        jButtonDelete.setEnabled(true);
-        
-    }
+	/**
+	 * Creates new form MAIL
+	 */
+	public MAIL() {
+		 initComponents();
+		initPopupMenu();
+		pack();
+		// è°ƒæ•´ä¸»ç•Œé¢å¤§å°é—®é¢˜
+//		double width = Toolkit.getDefaultToolkit().getScreenSize().width; //å¾—åˆ°å½“å‰å±å¹•åˆ†è¾¨ç‡çš„é«˜
+//		  double height = Toolkit.getDefaultToolkit().getScreenSize().height;//å¾—åˆ°å½“å‰å±å¹•åˆ†è¾¨ç‡çš„å®½æœç´¢
+//		  this.setSize((int)width,(int)height);//è®¾ç½®å¤§å°
+//		  this.setLocation(0,0); //è®¾ç½®çª—ä½“å±…ä¸­æ˜¾ç¤º
+//		  this.setResizable(false);//ç¦ç”¨æœ€å¤§åŒ–æŒ‰é’®
+		
+//		 double heightAdjustBefore = this.getHeight();
+//		 Dimension screenSize =Toolkit.getDefaultToolkit().getScreenSize();
+//		 double heightAdjustNow = screenSize.getHeight()*0.9;
+//		 Dimension adjust = new Dimension();
+//		 adjust.setSize(this.getWidth(), heightAdjustNow);
+//		 this.setSize(adjust);
+		// è°ƒæ•´å…¶å®ƒç•Œé¢å¤§å°
+		// double ratio = heightAdjustNow/heightAdjustBefore;
+		// double treeMailBoxHeight = jTreeMailBox.getHeight()*ratio;
+		// double listMailHeight = jListMailList.getHeight()*ratio;
+		// double textAreaContentHeight = jTextAreaContent.getHeight()*ratio;
+		// Dimension treeD = new Dimension();
+		// treeD.setSize(jTreeMailBox.getWidth(),treeMailBoxHeight);
+		// jTreeMailBox.setSize(treeD);
+		// Dimension listD = new Dimension();
+		// listD.setSize(jListMailList.getWidth(),listMailHeight);
+		// jListMailList.setSize(listD);
 
-    /**
-     * ÓÊ¼ş»ñÈ¡Ïß³Ì
-     */
-    class ReceiveMailWorker extends SwingWorker<String, Object> {
+		// è®¾ç½®å±æ€§
+		this.jTextAreaContent.setEditable(false);
+		this.setResizable(false);
+		jButtonDelete.setEnabled(false);
+		jButtonReply.setEnabled(false);
+		receiveWorker = new ReceiveMailWorker(this, jButtonReceiveMail);
+		jListMailList.setCellRenderer(new MyRenderer());
+		this.setLocationRelativeTo(null);
+	}
 
-        private MAIL frame = null;
-        private JButton button = null;
+	class MyRenderer extends DefaultListCellRenderer {
 
-        public ReceiveMailWorker(MAIL frame, JButton button) {
-            this.frame = frame;
-            this.button = button;
-        }
+		private Font font1;
 
-        @Override
-        protected String doInBackground() throws Exception {
-            //1.»ñÈ¡ÓÊ¼ş
-            button.setEnabled(false);
-            Account user = AccountHandler.getLoginAccount();
-            System.out.println(user);
-            IMailService mailService = MailServiceFactory.getMailService();
-            String server = MailServiceAddress.getPopAddress(user.getA_account());
-            frame.setTitle("NaiveMail   ÕıÔÚÊÕÈ¡ÓÊ¼şÖĞ..");
-            List<Mail> mailList = mailService.getRecentMail(server, user);
+		public MyRenderer() {
+			this.font1 = getFont();
+			font1 = font1.deriveFont(Font.BOLD);
+		}
 
-            //2.À¬»øÓÊ¼ş¹ıÂË
-            frame.setTitle("NaiveMail   ÊÕÈ¡ÓÊ¼şÍê³É£¬ÕıÔÚÊ¶±ğÀ¬»øÓÊ¼ş..");
-            int length = mailList.size();
-            IClassifier classfier = new Classifier();
-            classfier.categoryBatchMail(mailList);
-            //3.²åÈëĞÂÓÊ¼şµ½Êı¾İ¿âÖĞ
-            frame.setTitle("NaiveMail   Ê¶±ğÍê³É£¬ÕıÔÚ±£´æ²Ù×÷½á¹û..");
-            IMailDao mdao = new MailDao();
-            mdao.insertBatchMail(mailList);
-            return null;
-        }
+		@Override
+		public Component getListCellRendererComponent(JList list, Object value,
+				int index, boolean isSelected, boolean cellHasFocus) {
+			super.getListCellRendererComponent(list, value, index, isSelected,
+					cellHasFocus);
+			Summary m = (Summary) value;
+			if (m.getRead() == 0) {
+				setFont(font1);
+			}
+			return this;
+		}
+	}
 
-        @Override
-        public void done() {
-            frame.setTitle("NaiveMail");
-            button.setEnabled(true);
-            //Ë¢ĞÂ½çÃæ            
-            frame.setFrame();
-        }
-    }
+	/**
+	 * åˆ—è¡¨çš„å†…å®¹
+	 */
+	class Summary {
+		private String subject;
+		private String time;
+		private int read;
 
-    /**
-     * This method is called from within the constructor to initialize the form.
-     * WARNING: Do NOT modify this code. The content of this method is always
-     * regenerated by the Form Editor.
-     */
-    @SuppressWarnings("unchecked")
+		public Summary(String subject, String time, int read) {
+			this.subject = subject;
+			this.time = time;
+			this.read = read;
+		}
+
+		public int getRead() {
+			return read;
+		}
+
+		@Override
+		public String toString() {
+			if (subject.length() > 10) {
+				subject = subject.substring(0, 10);
+				subject += "...";
+			}
+			String message = "";
+			if (subject == null || subject.isEmpty()) {
+				subject = "<æ— ä¸»é¢˜>";
+			}
+			if (time == null || time.isEmpty()) {
+				time = "";
+			}
+			message = (subject + "  " + time);
+			return message;
+		}
+	}
+
+	public MAIL setFrame() {
+		IMailDao mdao = new MailDao();
+		Account a = AccountHandler.getLoginAccount();
+		mailList = mdao.queryBoxAll(a, MailBox.INBOX);
+		MailSorter.sortByTime(mailList);
+		refreshJList();
+		jTreeMailBox.setSelectionRow(0);
+		// jListMailList.setFont(new Font(null, Font.BOLD, 20));
+		return this;
+	}
+
+	/**
+	 * åˆå§‹åŒ–æ”¶ä»¶ç®±å¼¹å‡ºèœå•
+	 */
+	private void initPopupMenu() {
+		JMenuItem setSpamItem = new JMenuItem("æ ‡ä¸ºä¸ºåƒåœ¾é‚®ä»¶");
+		setSpamItem.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				// å°†è¢«é€‰ä¸­é¡¹æ ‡ä¸ºåƒåœ¾é‚®ä»¶
+				Mail m = mailList.get(popupSelectedItemIndex);
+				m.setB_id(MailBox.SPAMBOX);
+				IMailDao mdao = new MailDao();
+				mdao.updateMail(m);
+				// è®¾ç½®ç•Œé¢å˜åŒ–
+				DefaultListModel model = (DefaultListModel) jListMailList
+						.getModel();
+				model.removeElementAt(popupSelectedItemIndex);
+				if (popupSelectedItemIndex == model.getSize()) {
+					jListMailList.setSelectedIndex(popupSelectedItemIndex - 1);
+				}
+				jListMailList.setSelectedIndex(popupSelectedItemIndex);
+			}
+		});
+		popupInbox.add(setSpamItem);
+		
+		JMenuItem setInboxItem = new JMenuItem("è¿™ä¸æ˜¯åƒåœ¾é‚®ä»¶");
+		setInboxItem.addActionListener(new ActionListener() {
+			
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				// å°†è¢«é€‰ä¸­é¡¹æ ‡è®°ä¸ºæ­£å¸¸é‚®ä»¶
+				Mail m = mailList.get(popupSelectedItemIndex);
+				m.setB_id(MailBox.INBOX);
+				IMailDao mdao = new MailDao();
+				mdao.updateMail(m);
+				// è®¾ç½®ç•Œé¢å˜åŒ–
+				DefaultListModel model = (DefaultListModel) jListMailList
+						.getModel();
+				model.removeElementAt(popupSelectedItemIndex);
+				if (popupSelectedItemIndex == model.getSize()) {
+					jListMailList.setSelectedIndex(popupSelectedItemIndex - 1);
+				}
+				jListMailList.setSelectedIndex(popupSelectedItemIndex);
+			}
+		});
+		popupSpam.add(setInboxItem);
+	}
+	
+	private void clearALlPopupAction(){
+		jListMailList.removeMouseListener(spamBoxPopupMouseAction);
+		jListMailList.removeMouseListener(inboxPopupMouseAction);
+	}
+	
+	private void setInboxPopupAction() {		
+		jListMailList.addMouseListener(inboxPopupMouseAction);
+	}
+	
+	private void setSpamBoxPopupAction(){		
+		jListMailList.addMouseListener(spamBoxPopupMouseAction);
+	}
+	
+	/**
+	 * åˆ·æ–°é‚®ä»¶åˆ—è¡¨JList
+	 * 
+	 * @return
+	 */
+	private void refreshJList() {
+		// 1.å¡«å……JListçš„å†…å®¹
+		mailListModel.clear();
+		for (int i = 0; i < mailList.size(); ++i) {
+			String subject = mailList.get(i).getM_title();
+			String time = mailList.get(i).getM_time();
+			int read = mailList.get(i).getM_read();
+			Summary summary = new Summary(subject, time, read);
+			mailListModel.addElement(summary);
+		}
+		// System.out.println("mailListModel size : " +
+		// mailListModel.getSize());
+		// è®¾ç½®é‚®ä»¶åˆ—è¡¨å†…å®¹
+		jListMailList.setModel(mailListModel);
+		// 2.è®¾ç½®è¢«é€‰ä¸­çŠ¶æ€ï¼Œä»¥åŠå³è¾¹å±•ç¤º
+		int selectedIndex = jListMailList.getSelectedIndex();
+		if (selectedIndex == -1) {
+			// è®¾ç½®ä¸ºç¬¬ä¸€å°é»˜è®¤å±•ç¤º
+			if (mailList.size() > 0) {
+				this.setShowMail(mailList.get(0));
+				jListMailList.setSelectedIndex(0);
+			} else {
+				// mailListæ²¡å†…å®¹
+				this.setShowMail(new Mail());
+			}
+		} else {
+			this.setShowMail(mailList.get(selectedIndex));
+		}
+	}
+
+	private void setShowMail(Mail m) {
+		if (m == null) {
+			return;
+		}
+		String longString = m.getM_title();
+		StringBuilder builder = new StringBuilder("<html>");
+	    char[] chars = longString.toCharArray();
+	    FontMetrics fontMetrics = jLabelSubject.getFontMetrics(jLabelSubject.getFont());
+	    for (int beginIndex = 0, limit = 1;; limit++) {
+	        System.out.println(beginIndex + " " + limit + " " + (beginIndex + limit));
+	        if (fontMetrics.charsWidth(chars, beginIndex, limit) < jLabelSubject.getWidth()) {
+	            if (beginIndex + limit < chars.length) {
+	                continue;
+	            }
+	            builder.append(chars, beginIndex, limit);
+	            break;
+	        }
+	        builder.append(chars, beginIndex, limit - 1).append("<br/>");
+	        beginIndex+=limit-1;
+	        //beginIndex <span style="color: rgb(255, 0, 0);">+=</span> limit - 1;
+	        limit = 0;
+	    }
+	    builder.append("</html>");
+	    
+		jLabelSubject.setText(builder.toString());
+		jLabelFrom.setText(m.getM_sender());
+		jLabelTo.setText(m.getM_receiver());
+		jLabelTime.setText(m.getM_time());
+		jTextAreaContent.setText(m.getM_content());
+		if(m.getA_id()==0)
+			return;
+		// é€‰æ‹©äº†ç‰¹å®šé‚®ä»¶åï¼Œè®¾ç½®åˆ é™¤ã€è½¬å‘ã€å›å¤æŒ‰é’®å¯ç”¨!è‰ç¨¿ç®±ä¸­å›å¤æŒ‰é’®ä¸å¯ç”¨
+		if (m.getB_id() != MailBox.DRAFTS) {
+			jButtonReply.setEnabled(true);
+		}
+		jButtonDelete.setEnabled(true);
+
+	}
+
+	/**
+	 * é‚®ä»¶è·å–çº¿ç¨‹
+	 */
+	class ReceiveMailWorker extends SwingWorker<String, Object> {
+
+		private MAIL frame = null;
+		private JButton button = null;
+
+		public ReceiveMailWorker(MAIL frame, JButton button) {
+			this.frame = frame;
+			this.button = button;
+		}
+
+		@Override
+		protected String doInBackground() throws Exception {
+			// 1.è·å–é‚®ä»¶
+			button.setEnabled(false);
+			Account user = AccountHandler.getLoginAccount();
+			System.out.println(user);
+			IMailService mailService = MailServiceFactory.getMailService();
+			String server = MailServiceAddress.getPopAddress(user
+					.getA_account());
+			frame.setTitle("NaiveMail   æ­£åœ¨æ”¶å–é‚®ä»¶ä¸­..");
+			List<Mail> mailList = mailService.getRecentMail(server, user);
+
+			// 2.åƒåœ¾é‚®ä»¶è¿‡æ»¤
+			frame.setTitle("NaiveMail   æ”¶å–é‚®ä»¶å®Œæˆï¼Œæ­£åœ¨è¯†åˆ«åƒåœ¾é‚®ä»¶..");
+			int length = mailList.size();
+			IClassifier classfier = new Classifier();
+			classfier.categoryBatchMail(mailList);
+			// 3.æ’å…¥æ–°é‚®ä»¶åˆ°æ•°æ®åº“ä¸­
+			frame.setTitle("NaiveMail   è¯†åˆ«å®Œæˆï¼Œæ­£åœ¨ä¿å­˜æ“ä½œç»“æœ..");
+			IMailDao mdao = new MailDao();
+			mdao.insertBatchMail(mailList);
+			return null;
+		}
+
+		@Override
+		public void done() {
+			frame.setTitle("NaiveMail");
+			button.setEnabled(true);
+			// åˆ·æ–°ç•Œé¢
+			frame.setFrame();
+		}
+	}
+
+	/**
+	 * This method is called from within the constructor to initialize the form.
+	 * WARNING: Do NOT modify this code. The content of this method is always
+	 * regenerated by the Form Editor.
+	 */
+	@SuppressWarnings("unchecked")
+	// <editor-fold defaultstate="collapsed"
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
-        jComboBox1 = new javax.swing.JComboBox();
-        jPopupMenu1 = new javax.swing.JPopupMenu();
         jPanel1 = new javax.swing.JPanel();
         jButtonReceiveMail = new javax.swing.JButton();
         jButtonWriteMail = new javax.swing.JButton();
@@ -260,11 +421,10 @@ public class MAIL extends javax.swing.JFrame {
         jButtonSearch = new javax.swing.JButton();
         jButtonUserManager = new javax.swing.JButton();
         jTextFieldSearch = new javax.swing.JTextField();
+        jSeparator1 = new javax.swing.JSeparator();
+        jPanel2 = new javax.swing.JPanel();
         jScrollPane1 = new javax.swing.JScrollPane();
         jTreeMailBox = new javax.swing.JTree();
-        jPanel2 = new javax.swing.JPanel();
-        jScrollPane2 = new javax.swing.JScrollPane();
-        jListMailList = new javax.swing.JList();
         jPanel5 = new javax.swing.JPanel();
         jLabelFrom = new javax.swing.JLabel();
         jLabel2 = new javax.swing.JLabel();
@@ -273,17 +433,18 @@ public class MAIL extends javax.swing.JFrame {
         jLabelSubject = new javax.swing.JLabel();
         jScrollPane4 = new javax.swing.JScrollPane();
         jTextAreaContent = new javax.swing.JTextArea();
-        jSeparator1 = new javax.swing.JSeparator();
-
-        jComboBox1.setModel(new javax.swing.DefaultComboBoxModel(new String[] { "Item 1", "Item 2", "Item 3", "Item 4" }));
+        jPanel3 = new javax.swing.JPanel();
+        jScrollPane2 = new javax.swing.JScrollPane();
+        jListMailList = new javax.swing.JList();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         setTitle("NaiveMail");
         setCursor(new java.awt.Cursor(java.awt.Cursor.DEFAULT_CURSOR));
+        setPreferredSize(new java.awt.Dimension(1000, 750));
 
-        jButtonReceiveMail.setFont(new java.awt.Font("Î¢ÈíÑÅºÚ", 0, 14)); // NOI18N
+        jButtonReceiveMail.setFont(new java.awt.Font("å¾®è½¯é›…é»‘", 0, 14)); // NOI18N
         jButtonReceiveMail.setIcon(new javax.swing.ImageIcon(getClass().getResource("/image/getmail.png"))); // NOI18N
-        jButtonReceiveMail.setText("ÊÕÈ¡");
+        jButtonReceiveMail.setText("æ”¶å–");
         jButtonReceiveMail.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
         jButtonReceiveMail.setMargin(new java.awt.Insets(4, 4, 4, 4));
         jButtonReceiveMail.addActionListener(new java.awt.event.ActionListener() {
@@ -292,9 +453,9 @@ public class MAIL extends javax.swing.JFrame {
             }
         });
 
-        jButtonWriteMail.setFont(new java.awt.Font("Î¢ÈíÑÅºÚ", 0, 14)); // NOI18N
+        jButtonWriteMail.setFont(new java.awt.Font("å¾®è½¯é›…é»‘", 0, 14)); // NOI18N
         jButtonWriteMail.setIcon(new javax.swing.ImageIcon(getClass().getResource("/image/compose.png"))); // NOI18N
-        jButtonWriteMail.setText("Ğ´ÓÊ¼ş");
+        jButtonWriteMail.setText("å†™é‚®ä»¶");
         jButtonWriteMail.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
         jButtonWriteMail.setMargin(new java.awt.Insets(4, 4, 4, 4));
         jButtonWriteMail.addActionListener(new java.awt.event.ActionListener() {
@@ -303,9 +464,9 @@ public class MAIL extends javax.swing.JFrame {
             }
         });
 
-        jButtonReply.setFont(new java.awt.Font("Î¢ÈíÑÅºÚ", 0, 14)); // NOI18N
+        jButtonReply.setFont(new java.awt.Font("å¾®è½¯é›…é»‘", 0, 14)); // NOI18N
         jButtonReply.setIcon(new javax.swing.ImageIcon(getClass().getResource("/image/reply.png"))); // NOI18N
-        jButtonReply.setText("»Ø¸´");
+        jButtonReply.setText("å›å¤");
         jButtonReply.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
         jButtonReply.setMargin(new java.awt.Insets(4, 4, 4, 4));
         jButtonReply.addActionListener(new java.awt.event.ActionListener() {
@@ -314,9 +475,9 @@ public class MAIL extends javax.swing.JFrame {
             }
         });
 
-        jButtonDelete.setFont(new java.awt.Font("Î¢ÈíÑÅºÚ", 0, 14)); // NOI18N
+        jButtonDelete.setFont(new java.awt.Font("å¾®è½¯é›…é»‘", 0, 14)); // NOI18N
         jButtonDelete.setIcon(new javax.swing.ImageIcon(getClass().getResource("/image/tool_archive.png"))); // NOI18N
-        jButtonDelete.setText("É¾³ı");
+        jButtonDelete.setText("åˆ é™¤");
         jButtonDelete.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
         jButtonDelete.setInheritsPopupMenu(true);
         jButtonDelete.setMargin(new java.awt.Insets(4, 4, 4, 4));
@@ -326,9 +487,9 @@ public class MAIL extends javax.swing.JFrame {
             }
         });
 
-        jButtonSearch.setFont(new java.awt.Font("Î¢ÈíÑÅºÚ", 0, 14)); // NOI18N
+        jButtonSearch.setFont(new java.awt.Font("å¾®è½¯é›…é»‘", 0, 14)); // NOI18N
         jButtonSearch.setIcon(new javax.swing.ImageIcon(getClass().getResource("/image/search_icon.png"))); // NOI18N
-        jButtonSearch.setText("ËÑË÷");
+        jButtonSearch.setText("æœç´¢");
         jButtonSearch.setCursor(new java.awt.Cursor(java.awt.Cursor.DEFAULT_CURSOR));
         jButtonSearch.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
         jButtonSearch.setMargin(new java.awt.Insets(4, 4, 4, 4));
@@ -338,9 +499,9 @@ public class MAIL extends javax.swing.JFrame {
             }
         });
 
-        jButtonUserManager.setFont(new java.awt.Font("Î¢ÈíÑÅºÚ", 0, 14)); // NOI18N
+        jButtonUserManager.setFont(new java.awt.Font("å¾®è½¯é›…é»‘", 0, 14)); // NOI18N
         jButtonUserManager.setIcon(new javax.swing.ImageIcon(getClass().getResource("/image/menu.png"))); // NOI18N
-        jButtonUserManager.setText("ÓÃ»§ĞÅÏ¢");
+        jButtonUserManager.setText("ç”¨æˆ·ä¿¡æ¯");
         jButtonUserManager.setMargin(new java.awt.Insets(4, 4, 4, 4));
         jButtonUserManager.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -353,20 +514,25 @@ public class MAIL extends javax.swing.JFrame {
         jPanel1Layout.setHorizontalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel1Layout.createSequentialGroup()
-                .addContainerGap()
-                .addComponent(jButtonReceiveMail)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jButtonWriteMail)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jButtonReply)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jButtonDelete)
-                .addGap(144, 144, 144)
-                .addComponent(jTextFieldSearch, javax.swing.GroupLayout.PREFERRED_SIZE, 213, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                .addComponent(jButtonSearch)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                .addComponent(jButtonUserManager)
+                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(jPanel1Layout.createSequentialGroup()
+                        .addGap(20, 20, 20)
+                        .addComponent(jSeparator1))
+                    .addGroup(jPanel1Layout.createSequentialGroup()
+                        .addGap(2, 2, 2)
+                        .addComponent(jButtonReceiveMail)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(jButtonWriteMail)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(jButtonReply)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(jButtonDelete)
+                        .addGap(18, 18, 18)
+                        .addComponent(jTextFieldSearch, javax.swing.GroupLayout.PREFERRED_SIZE, 213, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                        .addComponent(jButtonSearch)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 197, Short.MAX_VALUE)
+                        .addComponent(jButtonUserManager)))
                 .addContainerGap())
         );
         jPanel1Layout.setVerticalGroup(
@@ -381,24 +547,29 @@ public class MAIL extends javax.swing.JFrame {
                     .addComponent(jButtonWriteMail, javax.swing.GroupLayout.PREFERRED_SIZE, 0, Short.MAX_VALUE)
                     .addComponent(jButtonReceiveMail, javax.swing.GroupLayout.PREFERRED_SIZE, 27, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(jButtonDelete, javax.swing.GroupLayout.PREFERRED_SIZE, 0, Short.MAX_VALUE))
-                .addGap(0, 10, Short.MAX_VALUE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addComponent(jSeparator1, javax.swing.GroupLayout.PREFERRED_SIZE, 8, javax.swing.GroupLayout.PREFERRED_SIZE))
         );
 
         jPanel1Layout.linkSize(javax.swing.SwingConstants.VERTICAL, new java.awt.Component[] {jButtonReceiveMail, jButtonReply, jButtonSearch, jButtonWriteMail, jTextFieldSearch});
 
+        jPanel2.setBackground(new java.awt.Color(255, 255, 255));
+        jPanel2.setName(""); // NOI18N
+        jPanel2.setPreferredSize(new java.awt.Dimension(1215, 700));
+
         jTreeMailBox.setBackground(new java.awt.Color(196, 235, 255));
-        jTreeMailBox.setFont(new java.awt.Font("Î¢ÈíÑÅºÚ", 0, 18)); // NOI18N
+        jTreeMailBox.setFont(new java.awt.Font("å¾®è½¯é›…é»‘", 0, 18)); // NOI18N
         jTreeMailBox.setForeground(new java.awt.Color(255, 255, 255));
         javax.swing.tree.DefaultMutableTreeNode treeNode1 = new javax.swing.tree.DefaultMutableTreeNode("root");
-        javax.swing.tree.DefaultMutableTreeNode treeNode2 = new javax.swing.tree.DefaultMutableTreeNode("ÊÕ¼şÏä");
+        javax.swing.tree.DefaultMutableTreeNode treeNode2 = new javax.swing.tree.DefaultMutableTreeNode("æ”¶ä»¶ç®±");
         treeNode1.add(treeNode2);
-        treeNode2 = new javax.swing.tree.DefaultMutableTreeNode("²İ¸åÏä");
+        treeNode2 = new javax.swing.tree.DefaultMutableTreeNode("è‰ç¨¿ç®±");
         treeNode1.add(treeNode2);
-        treeNode2 = new javax.swing.tree.DefaultMutableTreeNode("ÒÑ·¢ËÍÓÊ¼ş");
+        treeNode2 = new javax.swing.tree.DefaultMutableTreeNode("å·²å‘é€é‚®ä»¶");
         treeNode1.add(treeNode2);
-        treeNode2 = new javax.swing.tree.DefaultMutableTreeNode("ÒÑÉ¾³ıÓÊ¼ş");
+        treeNode2 = new javax.swing.tree.DefaultMutableTreeNode("å·²åˆ é™¤é‚®ä»¶");
         treeNode1.add(treeNode2);
-        treeNode2 = new javax.swing.tree.DefaultMutableTreeNode("À¬»øÓÊ¼ş");
+        treeNode2 = new javax.swing.tree.DefaultMutableTreeNode("åƒåœ¾é‚®ä»¶");
         treeNode1.add(treeNode2);
         jTreeMailBox.setModel(new javax.swing.tree.DefaultTreeModel(treeNode1));
         jTreeMailBox.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
@@ -415,56 +586,25 @@ public class MAIL extends javax.swing.JFrame {
         });
         jScrollPane1.setViewportView(jTreeMailBox);
 
-        jPanel2.setBackground(new java.awt.Color(255, 255, 255));
-        jPanel2.setName(""); // NOI18N
-
-        jListMailList.setFont(new java.awt.Font("Î¢ÈíÑÅºÚ", 0, 14)); // NOI18N
-        jListMailList.setModel(this.mailListModel);
-        jListMailList.setToolTipText("");
-        jListMailList.setSelectionBackground(new java.awt.Color(102, 204, 255));
-        jListMailList.setValueIsAdjusting(true);
-        jListMailList.setVisibleRowCount(16);
-        jListMailList.addListSelectionListener(new javax.swing.event.ListSelectionListener() {
-            public void valueChanged(javax.swing.event.ListSelectionEvent evt) {
-                jListMailListValueChanged(evt);
-            }
-        });
-        jScrollPane2.setViewportView(jListMailList);
-
-        javax.swing.GroupLayout jPanel2Layout = new javax.swing.GroupLayout(jPanel2);
-        jPanel2.setLayout(jPanel2Layout);
-        jPanel2Layout.setHorizontalGroup(
-            jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel2Layout.createSequentialGroup()
-                .addGap(0, 0, Short.MAX_VALUE)
-                .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 284, javax.swing.GroupLayout.PREFERRED_SIZE))
-        );
-        jPanel2Layout.setVerticalGroup(
-            jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel2Layout.createSequentialGroup()
-                .addComponent(jScrollPane2, javax.swing.GroupLayout.DEFAULT_SIZE, 726, Short.MAX_VALUE)
-                .addContainerGap())
-        );
-
         jPanel5.setBackground(new java.awt.Color(255, 255, 255));
 
-        jLabelFrom.setFont(new java.awt.Font("Î¢ÈíÑÅºÚ", 1, 14)); // NOI18N
-        jLabelFrom.setText("ÕâÀïÌî³ä·¢¼şÈË");
+        jLabelFrom.setFont(new java.awt.Font("å¾®è½¯é›…é»‘", 1, 14)); // NOI18N
+        jLabelFrom.setText("è¿™é‡Œå¡«å……å‘ä»¶äºº");
 
-        jLabel2.setFont(new java.awt.Font("Î¢ÈíÑÅºÚ", 0, 12)); // NOI18N
+        jLabel2.setFont(new java.awt.Font("å¾®è½¯é›…é»‘", 0, 12)); // NOI18N
         jLabel2.setForeground(new java.awt.Color(102, 102, 102));
-        jLabel2.setText("·¢¸ø");
+        jLabel2.setText("å‘ç»™");
 
-        jLabelTo.setFont(new java.awt.Font("Î¢ÈíÑÅºÚ", 0, 12)); // NOI18N
+        jLabelTo.setFont(new java.awt.Font("å¾®è½¯é›…é»‘", 0, 12)); // NOI18N
         jLabelTo.setForeground(new java.awt.Color(102, 102, 102));
-        jLabelTo.setText("ÕâÀïÌî³äÊÕ¼şÈË");
+        jLabelTo.setText("è¿™é‡Œå¡«å……æ”¶ä»¶äºº");
 
-        jLabelTime.setFont(new java.awt.Font("Î¢ÈíÑÅºÚ", 0, 12)); // NOI18N
+        jLabelTime.setFont(new java.awt.Font("å¾®è½¯é›…é»‘", 0, 12)); // NOI18N
         jLabelTime.setForeground(new java.awt.Color(102, 102, 102));
         jLabelTime.setText("2013-12-08 18:30");
 
-        jLabelSubject.setFont(new java.awt.Font("Î¢ÈíÑÅºÚ", 1, 18)); // NOI18N
-        jLabelSubject.setText("ÓÊ¼şÖ÷Ìâ");
+        jLabelSubject.setFont(new java.awt.Font("å¾®è½¯é›…é»‘", 1, 16)); // NOI18N
+        jLabelSubject.setText("é‚®ä»¶ä¸»é¢˜");
 
         jTextAreaContent.setColumns(20);
         jTextAreaContent.setLineWrap(true);
@@ -477,36 +617,80 @@ public class MAIL extends javax.swing.JFrame {
             jPanel5Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel5Layout.createSequentialGroup()
                 .addContainerGap()
-                .addGroup(jPanel5Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jLabelSubject, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel5Layout.createSequentialGroup()
-                        .addGap(0, 0, Short.MAX_VALUE)
-                        .addGroup(jPanel5Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel5Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
-                                .addGroup(javax.swing.GroupLayout.Alignment.LEADING, jPanel5Layout.createSequentialGroup()
-                                    .addComponent(jLabel2)
-                                    .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                    .addComponent(jLabelTo, javax.swing.GroupLayout.PREFERRED_SIZE, 203, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                    .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                    .addComponent(jLabelTime, javax.swing.GroupLayout.PREFERRED_SIZE, 127, javax.swing.GroupLayout.PREFERRED_SIZE))
-                                .addComponent(jScrollPane4, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.PREFERRED_SIZE, 591, javax.swing.GroupLayout.PREFERRED_SIZE))
-                            .addComponent(jLabelFrom, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, 591, javax.swing.GroupLayout.PREFERRED_SIZE))))
-                .addGap(6, 6, 6))
+                .addGroup(jPanel5Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                    .addGroup(javax.swing.GroupLayout.Alignment.LEADING, jPanel5Layout.createSequentialGroup()
+                        .addComponent(jLabel2)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(jLabelTo, javax.swing.GroupLayout.PREFERRED_SIZE, 203, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 99, Short.MAX_VALUE)
+                        .addComponent(jLabelTime, javax.swing.GroupLayout.PREFERRED_SIZE, 121, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addComponent(jLabelFrom, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(jLabelSubject, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addGroup(jPanel5Layout.createSequentialGroup()
+                        .addComponent(jScrollPane4)
+                        .addContainerGap())))
         );
         jPanel5Layout.setVerticalGroup(
             jPanel5Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel5Layout.createSequentialGroup()
-                .addContainerGap()
                 .addComponent(jLabelSubject, javax.swing.GroupLayout.PREFERRED_SIZE, 41, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                 .addComponent(jLabelFrom)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGap(2, 2, 2)
                 .addGroup(jPanel5Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(jLabel2)
                     .addComponent(jLabelTo)
                     .addComponent(jLabelTime))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jScrollPane4, javax.swing.GroupLayout.DEFAULT_SIZE, 625, Short.MAX_VALUE)
+                .addComponent(jScrollPane4, javax.swing.GroupLayout.DEFAULT_SIZE, 481, Short.MAX_VALUE))
+        );
+
+        jListMailList.setFont(new java.awt.Font("å¾®è½¯é›…é»‘", 0, 14)); // NOI18N
+        jListMailList.setModel(this.mailListModel);
+        jListMailList.setToolTipText("");
+        jListMailList.setSelectionBackground(new java.awt.Color(102, 204, 255));
+        jListMailList.setValueIsAdjusting(true);
+        jListMailList.setVisibleRowCount(16);
+        jListMailList.addListSelectionListener(new javax.swing.event.ListSelectionListener() {
+            public void valueChanged(javax.swing.event.ListSelectionEvent evt) {
+                jListMailListValueChanged(evt);
+            }
+        });
+        jScrollPane2.setViewportView(jListMailList);
+
+        javax.swing.GroupLayout jPanel3Layout = new javax.swing.GroupLayout(jPanel3);
+        jPanel3.setLayout(jPanel3Layout);
+        jPanel3Layout.setHorizontalGroup(
+            jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel3Layout.createSequentialGroup()
+                .addGap(0, 0, Short.MAX_VALUE)
+                .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 278, javax.swing.GroupLayout.PREFERRED_SIZE))
+        );
+        jPanel3Layout.setVerticalGroup(
+            jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addComponent(jScrollPane2)
+        );
+
+        javax.swing.GroupLayout jPanel2Layout = new javax.swing.GroupLayout(jPanel2);
+        jPanel2.setLayout(jPanel2Layout);
+        jPanel2Layout.setHorizontalGroup(
+            jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel2Layout.createSequentialGroup()
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 143, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(jPanel3, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(jPanel5, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+        );
+        jPanel2Layout.setVerticalGroup(
+            jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel2Layout.createSequentialGroup()
+                .addContainerGap()
+                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                    .addComponent(jPanel3, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 576, Short.MAX_VALUE)
+                    .addComponent(jPanel5, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                 .addContainerGap())
         );
 
@@ -515,252 +699,252 @@ public class MAIL extends javax.swing.JFrame {
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
-                    .addGroup(javax.swing.GroupLayout.Alignment.LEADING, layout.createSequentialGroup()
-                        .addContainerGap()
-                        .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-                    .addGroup(javax.swing.GroupLayout.Alignment.LEADING, layout.createSequentialGroup()
-                        .addGap(20, 20, 20)
-                        .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 143, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(jPanel2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                        .addComponent(jPanel5, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                    .addGroup(javax.swing.GroupLayout.Alignment.LEADING, layout.createSequentialGroup()
-                        .addContainerGap()
-                        .addComponent(jSeparator1)))
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addContainerGap()
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(jPanel2, javax.swing.GroupLayout.PREFERRED_SIZE, 906, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addContainerGap(16, Short.MAX_VALUE))
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
-                .addContainerGap()
                 .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jSeparator1, javax.swing.GroupLayout.PREFERRED_SIZE, 8, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                    .addComponent(jPanel2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addGroup(javax.swing.GroupLayout.Alignment.LEADING, layout.createSequentialGroup()
-                        .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 728, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(0, 13, Short.MAX_VALUE))
-                    .addComponent(jPanel5, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addComponent(jPanel2, javax.swing.GroupLayout.DEFAULT_SIZE, 596, Short.MAX_VALUE)
                 .addContainerGap())
         );
 
         pack();
     }// </editor-fold>//GEN-END:initComponents
 
-    private void jButtonReceiveMailActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonReceiveMailActionPerformed
-        // ÊÕÈ¡ÓÊ¼ş°´Å¥
-        receiveWorker.execute();
-        while (receiveWorker.isDone()) {
-            receiveWorker = new ReceiveMailWorker(this, jButtonReceiveMail);
-        }
-    }//GEN-LAST:event_jButtonReceiveMailActionPerformed
+	private void jButtonReceiveMailActionPerformed(
+			java.awt.event.ActionEvent evt) {// GEN-FIRST:event_jButtonReceiveMailActionPerformed
+		// æ”¶å–é‚®ä»¶æŒ‰é’®
+		receiveWorker.execute();
+		while (receiveWorker.isDone()) {
+			receiveWorker = new ReceiveMailWorker(this, jButtonReceiveMail);
+		}
+	}// GEN-LAST:event_jButtonReceiveMailActionPerformed
 
-    private void jTreeMailBoxFocusGained(java.awt.event.FocusEvent evt) {//GEN-FIRST:event_jTreeMailBoxFocusGained
-        // TODO add your handling code here:
-        //Ã»ÓÃ£¡System.out.println(evt.getID());
-    }//GEN-LAST:event_jTreeMailBoxFocusGained
+	private void jTreeMailBoxFocusGained(java.awt.event.FocusEvent evt) {// GEN-FIRST:event_jTreeMailBoxFocusGained
+		// TODO add your handling code here:
+		// æ²¡ç”¨ï¼System.out.println(evt.getID());
+	}// GEN-LAST:event_jTreeMailBoxFocusGained
 
-    private void jTreeMailBoxValueChanged(javax.swing.event.TreeSelectionEvent evt) {//GEN-FIRST:event_jTreeMailBoxValueChanged
-        // ÓÊÏäÁĞ±íµã»÷ÊÂ¼ş
-        DefaultMutableTreeNode selectedNode = (DefaultMutableTreeNode) jTreeMailBox.getLastSelectedPathComponent();//·µ»Ø×îºóÑ¡¶¨µÄ½Úµã
-        //System.out.println(selectedNode.toString());
-        //Éè¶¨É¾³ı¡¢×ª·¢¡¢»Ø¸´²»¿ÉÓÃ
-        jButtonDelete.setEnabled(false);
-        jButtonReply.setEnabled(false);
-        //Çå¿ÕÓÊ¼şÏÔÊ¾ÁĞ±í
-        jListMailList.setListData(new String[]{});
-        //»ñÈ¡µ±Ç°µÇÂ¼ÕËºÅ
-        IMailDao mdao = new MailDao();
-        Account a = AccountHandler.getLoginAccount();
-        //Ìî³äÓÊ¼şÁĞ±íÄÚÈİ
-        if (selectedNode.toString().equals("ÊÕ¼şÏä")) {
-            //ÏÔÊ¾ÊÕ¼şÏäÖĞµÄÓÊ¼şµ½ÁĞ±íÖĞ
-            mailList = mdao.queryBoxAll(a, MailBox.INBOX);
-        } else if (selectedNode.toString().equals("²İ¸åÏä")) {
-            mailList = mdao.queryBoxAll(a, MailBox.DRAFTS);
-        } else if (selectedNode.toString().equals("ÒÑ·¢ËÍÓÊ¼ş")) {
-            mailList = mdao.queryBoxAll(a, MailBox.SENTBOX);
-        } else if (selectedNode.toString().equals("ÒÑÉ¾³ıÓÊ¼ş")) {
-            mailList = mdao.queryBoxAll(a, MailBox.DELETEDBOX);
-        } else {
-            //À¬»øÓÊ¼ş 
-            mailList = mdao.queryBoxAll(a, MailBox.SPAMBOX);
-        }
-        //¸ømailListÅÅĞò
-        MailSorter.sortByTime(mailList);
-        this.refreshJList();
-    }//GEN-LAST:event_jTreeMailBoxValueChanged
+	private void jTreeMailBoxValueChanged(
+			javax.swing.event.TreeSelectionEvent evt) {// GEN-FIRST:event_jTreeMailBoxValueChanged
+		// é‚®ç®±åˆ—è¡¨ç‚¹å‡»äº‹ä»¶
+		DefaultMutableTreeNode selectedNode = (DefaultMutableTreeNode) jTreeMailBox
+				.getLastSelectedPathComponent();// è¿”å›æœ€åé€‰å®šçš„èŠ‚ç‚¹
+		// System.out.println(selectedNode.toString());
+		// è®¾å®šåˆ é™¤ã€è½¬å‘ã€å›å¤ä¸å¯ç”¨
+		jButtonDelete.setEnabled(false);
+		jButtonReply.setEnabled(false);
+		// æ¸…ç©ºé‚®ä»¶æ˜¾ç¤ºåˆ—è¡¨
+		jListMailList.setListData(new String[] {});
+		// è·å–å½“å‰ç™»å½•è´¦å·
+		IMailDao mdao = new MailDao();
+		Account a = AccountHandler.getLoginAccount();
+		clearALlPopupAction();// æ¸…é™¤åˆ—è¡¨å³é”®èœå•
+		// å¡«å……é‚®ä»¶åˆ—è¡¨å†…å®¹
+		if (selectedNode.toString().equals("æ”¶ä»¶ç®±")) {
+			// æ˜¾ç¤ºæ”¶ä»¶ç®±ä¸­çš„é‚®ä»¶åˆ°åˆ—è¡¨ä¸­
+			mailList = mdao.queryBoxAll(a, MailBox.INBOX);
+			setInboxPopupAction();
+		} else if (selectedNode.toString().equals("è‰ç¨¿ç®±")) {
+			mailList = mdao.queryBoxAll(a, MailBox.DRAFTS);
+		} else if (selectedNode.toString().equals("å·²å‘é€é‚®ä»¶")) {
+			mailList = mdao.queryBoxAll(a, MailBox.SENTBOX);
+		} else if (selectedNode.toString().equals("å·²åˆ é™¤é‚®ä»¶")) {
+			mailList = mdao.queryBoxAll(a, MailBox.DELETEDBOX);
+		} else {
+			// åƒåœ¾é‚®ä»¶
+			mailList = mdao.queryBoxAll(a, MailBox.SPAMBOX);
+			setSpamBoxPopupAction();
+		}
+		// ç»™mailListæ’åº
+		MailSorter.sortByTime(mailList);
+		this.refreshJList();
+	}// GEN-LAST:event_jTreeMailBoxValueChanged
 
-    private void jListMailListValueChanged(javax.swing.event.ListSelectionEvent evt) {//GEN-FIRST:event_jListMailListValueChanged
-        // ÓÊ¼şÁĞ±íÑ¡ÔñÊÂ¼ş
-        int index = jListMailList.getSelectedIndex();
-        if (evt.getValueIsAdjusting() || index < 0) {
-            return;
-        }
-        Mail m = new Mail();
-        if (mailList.size() > 0) {
-            m = mailList.get(index);
-            //Èç¹ûÓÊ¼şÃ»ÓĞ±»¿´¹ı£¬ÔòÉèÖÃread×Ö¶Î£¬²¢¸üĞÂ
-            if(m.getM_read()==0){
-                //¸üĞÂÊı¾İ¿â
-                m.setM_read(1);
-                IMailDao mdao = new MailDao();
-                mdao.updateMail(m);
-                //¸üĞÂÁĞ±í
-                this.refreshJList();
-            }
-            //ÕâÀïÇ¿ÖÆÉèÖÃindex£¡
-            jListMailList.setSelectedIndex(index);
-            this.setShowMail(m);
-        } else {
-            this.setShowMail(m);
-        }
-    }//GEN-LAST:event_jListMailListValueChanged
+	private void jListMailListValueChanged(
+			javax.swing.event.ListSelectionEvent evt) {// GEN-FIRST:event_jListMailListValueChanged
+		// é‚®ä»¶åˆ—è¡¨é€‰æ‹©äº‹ä»¶
+		int index = jListMailList.getSelectedIndex();
+		if (evt.getValueIsAdjusting() || index < 0) {
+			return;
+		}
+		Mail m = new Mail();
+		if (mailList.size() > 0) {
+			m = mailList.get(index);
+			// å¦‚æœé‚®ä»¶æ²¡æœ‰è¢«çœ‹è¿‡ï¼Œåˆ™è®¾ç½®readå­—æ®µï¼Œå¹¶æ›´æ–°
+			if (m.getM_read() == 0) {
+				// æ›´æ–°æ•°æ®åº“
+				m.setM_read(1);
+				IMailDao mdao = new MailDao();
+				mdao.updateMail(m);
+				// æ›´æ–°åˆ—è¡¨
+				this.refreshJList();
+			}
+			// è¿™é‡Œå¼ºåˆ¶è®¾ç½®indexï¼
+			jListMailList.setSelectedIndex(index);
+			this.setShowMail(m);
+		} else {
+			this.setShowMail(m);
+		}
+	}// GEN-LAST:event_jListMailListValueChanged
 
-    private void jButtonDeleteActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonDeleteActionPerformed
-        // É¾³ıÌØ¶¨ÓÊ¼ş
-        //»ñÈ¡±»Ñ¡¶¨µÄÓÊ¼ş        
-        int index = jListMailList.getSelectedIndex();
-        if (index < 0 || mailList == null || mailList.size()<=0) {
-            return;
-        }
-        IMailDao mdao = new MailDao();
-        Mail mail = mailList.get(index);
-        int length = mailListModel.getSize();
-        //1.ÓÊ¼şÔÚÒÑÉ¾³ıÁĞ±íÖĞ
-        if(mail.getB_id() == MailBox.DELETEDBOX){
-        	//Ñ¯ÎÊÊÇ·ñÈ·ÈÏÉ¾³ı£¡
-            int type = JOptionPane.showConfirmDialog(this, "È·ÈÏÉ¾³ıÂğ£¿", "É¾³ı", JOptionPane.YES_NO_OPTION);
-            if (type == JOptionPane.YES_OPTION) {
-                mdao.deleteMail(mail.getM_id());
-                mailListModel.remove(index);
-                //ÉèÖÃÏÔÊ¾±»É¾³ıµÄÏÂÒ»·â
-	            if (mailList.size() > 0) {
-	            	if(index == length-1){
-	            		index--;
-	            	}
-	                this.setShowMail(mailList.get(index));
-	                jListMailList.setSelectedIndex(index);
-	            } else {
-	                this.setShowMail(null);
-	            }
-            }
-        }else {
-        //2.ÓÊ¼şÔÚÆäËüÁĞ±íÖĞ,Ôò°ÑÓÊ¼şÒÆ¶¯µ½À¬»øÏä
-        	mail.setB_id(MailBox.DELETEDBOX);
-            mdao.updateMail(mail);
-            mailList.remove(index);
-            mailListModel.remove(index);
-            if (mailList.size() > 0) {
-            	if(index == length-1){
-            		index--;
-            	}
-                this.setShowMail(mailList.get(index));
-                jListMailList.setSelectedIndex(index);                
-            } else {
-                this.setShowMail(null);
-            }
-        }                
-        
-    }//GEN-LAST:event_jButtonDeleteActionPerformed
+	private void jButtonDeleteActionPerformed(java.awt.event.ActionEvent evt) {// GEN-FIRST:event_jButtonDeleteActionPerformed
+		// åˆ é™¤ç‰¹å®šé‚®ä»¶
+		// è·å–è¢«é€‰å®šçš„é‚®ä»¶
+		int index = jListMailList.getSelectedIndex();
+		if (index < 0 || mailList == null || mailList.size() <= 0) {
+			return;
+		}
+		IMailDao mdao = new MailDao();
+		Mail mail = mailList.get(index);
+		int length = mailListModel.getSize();
+		// 1.é‚®ä»¶åœ¨å·²åˆ é™¤åˆ—è¡¨ä¸­
+		if (mail.getB_id() == MailBox.DELETEDBOX) {
+			// è¯¢é—®æ˜¯å¦ç¡®è®¤åˆ é™¤ï¼
+			int type = JOptionPane.showConfirmDialog(this, "ç¡®è®¤åˆ é™¤å—ï¼Ÿ", "åˆ é™¤",
+					JOptionPane.YES_NO_OPTION);
+			if (type == JOptionPane.YES_OPTION) {
+				mdao.deleteMail(mail.getM_id());
+				mailListModel.remove(index);
+				// è®¾ç½®æ˜¾ç¤ºè¢«åˆ é™¤çš„ä¸‹ä¸€å°
+				if (mailList.size() > 0) {
+					if (index == length - 1) {
+						index--;
+					}
+					this.setShowMail(mailList.get(index));
+					jListMailList.setSelectedIndex(index);
+				} else {
+					this.setShowMail(null);
+				}
+			}
+		} else {
+			// 2.é‚®ä»¶åœ¨å…¶å®ƒåˆ—è¡¨ä¸­,åˆ™æŠŠé‚®ä»¶ç§»åŠ¨åˆ°åƒåœ¾ç®±
+			mail.setB_id(MailBox.DELETEDBOX);
+			mdao.updateMail(mail);
+			mailList.remove(index);
+			mailListModel.remove(index);
+			if (mailList.size() > 0) {
+				if (index == length - 1) {
+					index--;
+				}
+				this.setShowMail(mailList.get(index));
+				jListMailList.setSelectedIndex(index);
+			} else {
+				this.setShowMail(null);
+			}
+		}
 
-    private void jButtonSearchActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonSearchActionPerformed
-        // ËÑË÷¹¦ÄÜ
-        String key = jTextFieldSearch.getText().trim();
-        if (key.isEmpty()) {
-            return;
-        }
-        IMailDao mdao = new MailDao();
-        Account a = AccountHandler.getLoginAccount();
-        List<Mail> searchResult = mdao.searchMail(a, key);
-        mailList = searchResult;
-        this.refreshJList();
-    }//GEN-LAST:event_jButtonSearchActionPerformed
+	}// GEN-LAST:event_jButtonDeleteActionPerformed
 
-    private void jButtonUserManagerActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonUserManagerActionPerformed
-        // ´ò¿ªÓÃ»§ÉèÖÃ½çÃæ
-        java.awt.EventQueue.invokeLater(new Runnable() {
-            public void run() {
-                FrameFactory.getUserInfoFrame().setFrame();
-                FrameFactory.getUserInfoFrame().setVisible(true);
-            }
-        });
-    }//GEN-LAST:event_jButtonUserManagerActionPerformed
+	private void jButtonSearchActionPerformed(java.awt.event.ActionEvent evt) {// GEN-FIRST:event_jButtonSearchActionPerformed
+		// æœç´¢åŠŸèƒ½
+		String key = jTextFieldSearch.getText().trim();
+		if (key.isEmpty()) {
+			return;
+		}
+		IMailDao mdao = new MailDao();
+		Account a = AccountHandler.getLoginAccount();
+		List<Mail> searchResult = mdao.searchMail(a, key);
+		mailList = searchResult;
+		this.refreshJList();
+	}// GEN-LAST:event_jButtonSearchActionPerformed
 
-    private void jButtonWriteMailActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonWriteMailActionPerformed
-        // Ğ´ÓÊ¼ş°´Å¥
-        WriteMail frame = FrameFactory.getWriteMailFrame();
-        frame.setVisible(true);
-        frame.setFrame();
-    }//GEN-LAST:event_jButtonWriteMailActionPerformed
+	private void jButtonUserManagerActionPerformed(
+			java.awt.event.ActionEvent evt) {// GEN-FIRST:event_jButtonUserManagerActionPerformed
+		// æ‰“å¼€ç”¨æˆ·è®¾ç½®ç•Œé¢
+		java.awt.EventQueue.invokeLater(new Runnable() {
+			public void run() {
+				FrameFactory.getUserInfoFrame().setFrame();
+				FrameFactory.getUserInfoFrame().setVisible(true);
+			}
+		});
+	}// GEN-LAST:event_jButtonUserManagerActionPerformed
 
-    private void jButtonReplyActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonReplyActionPerformed
-        // »Ø¸´ÓÊ¼ş°´Å¥
-        //1.»ñÈ¡µ±Ç°±»Ñ¡ÖĞµÄÓÊ¼ş
-        int selectedIndex = jListMailList.getSelectedIndex();
-        Mail selectedMail = mailList.get(selectedIndex);
-        //2.¹¹ÔìÒ»¸ö±»»Ø¸´µÄÓÊ¼ş
-        Mail mail = new Mail();
-        String content = "\n\n\n\n---------Ô­Ê¼ÓÊ¼ş-----------\n";
-        content+="·¢¼şÈË£º"+selectedMail.getM_sender()+"\n";
-        content+="·¢ËÍÊ±¼ä£º"+selectedMail.getM_time()+"\n";
-        content+="ÊÕ¼şÈË£º"+selectedMail.getM_receiver()+"\n";
-        content+="Ö÷Ìâ£º"+selectedMail.getM_title()+"\n";
-        content+=selectedMail.getM_content();
-        mail.setM_title("re:"+selectedMail.getM_title());
-        mail.setM_receiver(selectedMail.getM_sender());
-        mail.setM_sender(AccountHandler.getLoginAccount().getA_account());
-        mail.setM_content(content);
-        WriteMail frame = FrameFactory.getWriteMailFrame();
-        frame.setVisible(true);
-        frame.setMail(mail);
-        frame.setFrame();        
-    }//GEN-LAST:event_jButtonReplyActionPerformed
+	private void jButtonWriteMailActionPerformed(java.awt.event.ActionEvent evt) {// GEN-FIRST:event_jButtonWriteMailActionPerformed
+		// å†™é‚®ä»¶æŒ‰é’®
+		WriteMail frame = FrameFactory.getWriteMailFrame();
+		frame.setVisible(true);
+		frame.setFrame();
+	}// GEN-LAST:event_jButtonWriteMailActionPerformed
 
-    /**
-     * @param args the command line arguments
-     */
-    public static void main(String args[]) {
-        /*
-         * Set the Nimbus look and feel
-         */
-        //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">
-        /*
-         * If Nimbus (introduced in Java SE 6) is not available, stay with the
-         * default look and feel. For details see
-         * http://download.oracle.com/javase/tutorial/uiswing/lookandfeel/plaf.html
-         */
-        try {
-            for (javax.swing.UIManager.LookAndFeelInfo info : javax.swing.UIManager.getInstalledLookAndFeels()) {
-                if ("Nimbus".equals(info.getName())) {
-                    javax.swing.UIManager.setLookAndFeel(info.getClassName());
-                    break;
-                }
-            }
-        } catch (ClassNotFoundException ex) {
-            java.util.logging.Logger.getLogger(MAIL.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
-        } catch (InstantiationException ex) {
-            java.util.logging.Logger.getLogger(MAIL.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
-        } catch (IllegalAccessException ex) {
-            java.util.logging.Logger.getLogger(MAIL.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
-        } catch (javax.swing.UnsupportedLookAndFeelException ex) {
-            java.util.logging.Logger.getLogger(MAIL.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
-        }
-        //</editor-fold>
+	private void jButtonReplyActionPerformed(java.awt.event.ActionEvent evt) {// GEN-FIRST:event_jButtonReplyActionPerformed
+		// å›å¤é‚®ä»¶æŒ‰é’®
+		// 1.è·å–å½“å‰è¢«é€‰ä¸­çš„é‚®ä»¶
+		int selectedIndex = jListMailList.getSelectedIndex();
+		Mail selectedMail = mailList.get(selectedIndex);
+		// 2.æ„é€ ä¸€ä¸ªè¢«å›å¤çš„é‚®ä»¶
+		Mail mail = new Mail();
+		String content = "\n\n\n\n---------åŸå§‹é‚®ä»¶-----------\n";
+		content += "å‘ä»¶äººï¼š" + selectedMail.getM_sender() + "\n";
+		content += "å‘é€æ—¶é—´ï¼š" + selectedMail.getM_time() + "\n";
+		content += "æ”¶ä»¶äººï¼š" + selectedMail.getM_receiver() + "\n";
+		content += "ä¸»é¢˜ï¼š" + selectedMail.getM_title() + "\n";
+		content += selectedMail.getM_content();
+		mail.setM_title("re:" + selectedMail.getM_title());
+		mail.setM_receiver(selectedMail.getM_sender());
+		mail.setM_sender(AccountHandler.getLoginAccount().getA_account());
+		mail.setM_content(content);
+		WriteMail frame = FrameFactory.getWriteMailFrame();
+		frame.setVisible(true);
+		frame.setMail(mail);
+		frame.setFrame();
+	}// GEN-LAST:event_jButtonReplyActionPerformed
 
-        /*
-         * Create and display the form
-         */
-        java.awt.EventQueue.invokeLater(new Runnable() {
-            public void run() {
-                new MAIL().setVisible(true);
-            }
-        });
-    }
+	/**
+	 * @param args
+	 *            the command line arguments
+	 */
+	public static void main(String args[]) {
+		/*
+		 * Set the Nimbus look and feel
+		 */
+		// <editor-fold defaultstate="collapsed"
+		// desc=" Look and feel setting code (optional) ">
+		/*
+		 * If Nimbus (introduced in Java SE 6) is not available, stay with the
+		 * default look and feel. For details see
+		 * http://download.oracle.com/javase
+		 * /tutorial/uiswing/lookandfeel/plaf.html
+		 */
+		// try {
+		// for (javax.swing.UIManager.LookAndFeelInfo info :
+		// javax.swing.UIManager.getInstalledLookAndFeels()) {
+		// if ("Nimbus".equals(info.getName())) {
+		// javax.swing.UIManager.setLookAndFeel(info.getClassName());
+		// break;
+		// }
+		// }
+		// } catch (ClassNotFoundException ex) {
+		// java.util.logging.Logger.getLogger(MAIL.class.getName()).log(java.util.logging.Level.SEVERE,
+		// null, ex);
+		// } catch (InstantiationException ex) {
+		// java.util.logging.Logger.getLogger(MAIL.class.getName()).log(java.util.logging.Level.SEVERE,
+		// null, ex);
+		// } catch (IllegalAccessException ex) {
+		// java.util.logging.Logger.getLogger(MAIL.class.getName()).log(java.util.logging.Level.SEVERE,
+		// null, ex);
+		// } catch (javax.swing.UnsupportedLookAndFeelException ex) {
+		// java.util.logging.Logger.getLogger(MAIL.class.getName()).log(java.util.logging.Level.SEVERE,
+		// null, ex);
+		// }
+		// </editor-fold>
+
+		/*
+		 * Create and display the form
+		 */
+		java.awt.EventQueue.invokeLater(new Runnable() {
+			public void run() {
+				new MAIL().setVisible(true);
+			}
+		});
+	}
+
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton jButtonDelete;
     private javax.swing.JButton jButtonReceiveMail;
@@ -768,7 +952,6 @@ public class MAIL extends javax.swing.JFrame {
     private javax.swing.JButton jButtonSearch;
     private javax.swing.JButton jButtonUserManager;
     private javax.swing.JButton jButtonWriteMail;
-    private javax.swing.JComboBox jComboBox1;
     private javax.swing.JLabel jLabel2;
     private javax.swing.JLabel jLabelFrom;
     private javax.swing.JLabel jLabelSubject;
@@ -777,8 +960,8 @@ public class MAIL extends javax.swing.JFrame {
     private javax.swing.JList jListMailList;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JPanel jPanel2;
+    private javax.swing.JPanel jPanel3;
     private javax.swing.JPanel jPanel5;
-    private javax.swing.JPopupMenu jPopupMenu1;
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JScrollPane jScrollPane2;
     private javax.swing.JScrollPane jScrollPane4;

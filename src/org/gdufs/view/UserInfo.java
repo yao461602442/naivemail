@@ -338,8 +338,8 @@ public class UserInfo extends javax.swing.JFrame {
             a.setCheckTime(gap);
             System.out.println(adao.updateAccount(a));
             AccountHandler.setLoginAccount(a);//更新后立马设置account
-            this.setVisible(false);
         }
+        this.setVisible(false);
     }//GEN-LAST:event_jButtonYesActionPerformed
 
     private void jButtonSwitchActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonSwitchActionPerformed
